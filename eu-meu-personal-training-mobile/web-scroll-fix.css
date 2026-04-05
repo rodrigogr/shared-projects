@@ -1,0 +1,13 @@
+/* Fix scroll issues on web */
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Force native scroll on all scrollable containers */
+[data-testid="workout-scroll"],
+.r-overflow-auto {
+  -webkit-overflow-scrolling: touch !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+}

@@ -1,0 +1,4 @@
+nome,telefone,segmento,opt_in,data_opt_in,ultima_campanha,data_ultimo_envio,status_contato,resposta_ultima_campanha,data_ultima_resposta,interessado,opt_out,observacoes
+Maria Silva,5511999990001,bolsas,,,,,sem_consentimento,,,,Cliente indicada pela Ana
+Joana Santos,5521988880002,mochilas,,,,,sem_consentimento,,,,Comprou em dezembro
+Paula Oliveira,5531977770003,carteiras,,,,,sem_consentimento,,,,Veio pelo Instagram

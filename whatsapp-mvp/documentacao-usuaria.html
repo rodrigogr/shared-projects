@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Operacao de Atendimento WhatsApp - Luz da Lua</title>
+  <style>
+    :root {
+      --bg: #f6f1ea;
+      --paper: #fffdf9;
+      --ink: #2f241f;
+      --muted: #75645c;
+      --accent: #8d4f39;
+      --accent-soft: #ead7cb;
+      --line: #e5d6ca;
+      --ok: #3c6b55;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background: linear-gradient(180deg, #efe5dc 0%, #f8f4ef 100%);
+      color: var(--ink);
+      line-height: 1.55;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 12mm 13mm 11mm;
+      background: var(--paper);
+    }
+
+    .hero {
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      background: radial-gradient(circle at top right, #f4e2d8, #fffaf5 58%);
+      border-radius: 16px;
+      margin-bottom: 14px;
+    }
+
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 8px;
+      font-weight: 700;
+    }
+
+    h1 {
+      font-size: 25px;
+      line-height: 1.15;
+      margin: 0 0 8px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    h2 {
+      font-size: 17px;
+      margin: 14px 0 8px;
+      color: var(--accent);
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 4px;
+    }
+
+    h3 {
+      font-size: 14px;
+      margin: 8px 0 4px;
+    }
+
+    p {
+      margin: 5px 0;
+      font-size: 12.5px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 10px 12px;
+      background: #fff;
+    }
+
+    .callout {
+      border-left: 4px solid var(--accent);
+      background: #fbf3ed;
+      padding: 9px 11px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+
+    .ok {
+      border-left-color: var(--ok);
+      background: #f3f8f4;
+    }
+
+    ol, ul {
+      margin: 7px 0 7px 18px;
+      padding: 0;
+      font-size: 12.5px;
+    }
+
+    li {
+      margin: 4px 0;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 8px 0;
+      font-size: 11.5px;
+    }
+
+    th, td {
+      border: 1px solid var(--line);
+      padding: 7px 8px;
+      vertical-align: top;
+      text-align: left;
+    }
+
+    th {
+      background: var(--accent-soft);
+      font-weight: 700;
+    }
+
+    .flow-step {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 9px;
+      align-items: start;
+      margin: 6px 0;
+    }
+
+    .badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .tight p,
+    .tight li,
+    .tight td,
+    .tight th {
+      font-size: 11.5px;
+    }
+
+    .footer-note {
+      margin-top: 28px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .page {
+        margin: 0;
+        width: auto;
+        min-height: auto;
+        padding: 14mm;
+      }
+
+      .card, .hero, .callout {
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <p class="eyebrow">Documento Operacional</p>
+      <h1>Como vai funcionar o atendimento automatizado no WhatsApp</h1>
+      <p class="subtitle">Material simples para entendimento da usuaria final: o que o sistema vai fazer, o que voce vai fazer e como manter a operacao no dia a dia.</p>
+    </section>
+
+    <section class="tight">
+      <div class="callout ok">
+        <strong>Em resumo:</strong> a cliente entra na planilha, recebe uma mensagem pedindo autorizacao, e so depois do <strong>SIM</strong> recebe o texto com o catalogo em PDF. Se demonstrar interesse, o atendimento passa para voce.
+      </div>
+      <div class="grid">
+        <div>
+          <h2>Como vai funcionar</h2>
+          <div class="flow-step">
+            <div class="badge">1</div>
+            <div><p>Voce cadastra <strong>nome</strong>, <strong>telefone</strong> e <strong>segmento</strong>.</p></div>
+          </div>
+          <div class="flow-step">
+            <div class="badge">2</div>
+            <div><p>O sistema envia a mensagem de consentimento.</p></div>
+          </div>
+          <div class="flow-step">
+            <div class="badge">3</div>
+            <div><p>Se a cliente responder <strong>SIM</strong>, o sistema registra a autorizacao.</p></div>
+          </div>
+          <div class="flow-step">
+            <div class="badge">4</div>
+            <div><p>O sistema envia a mensagem com o texto personalizado e depois o PDF.</p></div>
+          </div>
+          <div class="flow-step">
+            <div class="badge">5</div>
+            <div><p>Se a cliente demonstrar interesse, voce continua o atendimento pelo WhatsApp.</p></div>
+          </div>
+        </div>
+        <div>
+          <h2>O que o sistema faz</h2>
+          <ul>
+            <li>Envia a mensagem pedindo autorizacao.</li>
+            <li>Registra respostas SIM, NAO e pedidos de saida.</li>
+            <li>Grava a data do consentimento.</li>
+            <li>Envia a mensagem pos-consentimento.</li>
+            <li>Envia o PDF do catalogo.</li>
+            <li>Atualiza os status da planilha.</li>
+            <li>Mostra quais clientes precisam do seu atendimento.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="tight">
+      <div class="grid">
+        <div>
+          <h2>O que voce precisa fazer</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Etapa</th>
+                <th>Sua acao</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Cadastro</td>
+                <td>Preencher nome, telefone e segmento.</td>
+              </tr>
+              <tr>
+                <td>Rotina</td>
+                <td>Ver clientes com interesse e atender manualmente.</td>
+              </tr>
+              <tr>
+                <td>Manutencao</td>
+                <td>Atualizar o PDF do catalogo quando a campanha mudar.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <h2>Campos principais</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Campo</th>
+                <th>Responsavel</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td>nome</td><td>Voce</td></tr>
+              <tr><td>telefone</td><td>Voce</td></tr>
+              <tr><td>segmento</td><td>Voce</td></tr>
+              <tr><td>opt_in</td><td>Sistema</td></tr>
+              <tr><td>data_opt_in</td><td>Sistema</td></tr>
+              <tr><td>status_contato</td><td>Sistema</td></tr>
+              <tr><td>interessado</td><td>Sistema</td></tr>
+              <tr><td>opt_out</td><td>Sistema</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="tight">
+      <div class="grid">
+        <div class="card">
+          <h2>Mensagens da cliente</h2>
+          <p><strong>1. Consentimento</strong><br>
+          Ola [nome]! Aqui e a Anni da Luz da Lua. Gostaria de te enviar promocoes exclusivas e novidades por aqui. Se quiser receber, responda SIM. Se preferir nao receber, responda NAO.</p>
+          <p><strong>2. Depois do SIM</strong><br>
+          Separei um catalogo com [segmento] da Luz da Lua que estao em promocao e queria te mostrar. Se gostar de algum modelo, me manda um print por aqui que eu te ajudo na escolha. Se preferir nao receber mais mensagens assim, e so me avisar. Anni.</p>
+          <p><strong>Depois dessa mensagem:</strong> o sistema envia o PDF do catalogo.</p>
+        </div>
+        <div class="card">
+          <h2>Status que importam</h2>
+          <ul>
+            <li><strong>sem_consentimento:</strong> cliente cadastrada, aguardando primeiro envio.</li>
+            <li><strong>aguardando_resposta_optin:</strong> mensagem enviada, aguardando resposta.</li>
+            <li><strong>campanha_enviada:</strong> mensagem com catalogo ja enviada.</li>
+            <li><strong>interessada:</strong> cliente respondeu com interesse; voce atende.</li>
+            <li><strong>opt_out:</strong> cliente nao quer mais receber mensagens.</li>
+          </ul>
+          <div class="callout">
+            <strong>Manutencao minima:</strong> manter a planilha correta, garantir que o PDF esteja atualizado e atender rapidamente quem responder com interesse.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tight">
+      <h2>Resumo final</h2>
+      <p>O sistema organiza o inicio do contato e registra as respostas. A sua parte fica concentrada em duas acoes: cadastrar corretamente a cliente e assumir o atendimento quando houver interesse real.</p>
+    </section>
+
+    <p class="footer-note">Documento preparado para uso interno. Linguagem simplificada para apresentacao da operacao a usuaria final.</p>
+  </main>
+</body>
+</html>
