@@ -1,0 +1,561 @@
+{
+  "name": "Fluxo C - Respostas (Luz da Lua)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "whatsapp-respostas",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "c1",
+      "name": "Webhook POST WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [200, 400],
+      "webhookId": "whatsapp-respostas-post"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "EVENT_RECEIVED",
+        "options": { "responseCode": 200 }
+      },
+      "id": "c2",
+      "name": "Respond 200 (ack imediato)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [420, 240]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "v1", "name": "telefone", "type": "string", "value": "={{ $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from }}" },
+            { "id": "v2", "name": "button_payload", "type": "string", "value": "={{ $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.button?.payload || $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.interactive?.button_reply?.id || '' }}" },
+            { "id": "v3", "name": "texto", "type": "string", "value": "={{ $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.text?.body || $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.button?.text || $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.interactive?.button_reply?.title || '' }}" },
+            { "id": "v4", "name": "texto_lower", "type": "string", "value": "={{ ($json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.text?.body || $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.button?.text || $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.interactive?.button_reply?.title || '').toLowerCase().trim() }}" },
+            { "id": "v5", "name": "timestamp", "type": "string", "value": "={{ $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.timestamp }}" },
+            { "id": "v6", "name": "is_optout", "type": "boolean", "value": "={{ /\\b(parar|sair|cancelar|pare|remove|remover|tirar|stop|descadastrar|descadastra|n[a\\u00e3]o\\s+quero\\s+mais|n[a\\u00e3]o\\s+manda\\s+mais|sair\\s+da\\s+lista)\\b/i.test(($json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.text?.body || $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.button?.text || $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.interactive?.button_reply?.title || '')) }}" },
+            { "id": "v7", "name": "is_positivo", "type": "boolean", "value": "={{ /\\b(sim|s|quero|aceito|ok|claro|confirmo|tenho\\s+interesse|me\\s+chama|quanto\\s+custa|pre[c\\u00e7]o|quero\\s+saber|pode\\s+mandar)\\b/i.test(($json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.text?.body || $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.button?.text || $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.interactive?.button_reply?.title || '')) }}" },
+            { "id": "v8", "name": "is_negativo", "type": "boolean", "value": "={{ /\\b(n[a\\u00e3]o|nao|n|agora\\s+n[a\\u00e3]o|depois|sem\\s+interesse|n[a\\u00e3]o\\s+preciso)\\b/i.test(($json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.text?.body || $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.button?.text || $json.body.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.interactive?.button_reply?.title || '')) }}" }
+          ]
+        },
+        "options": { "includeOtherFields": false }
+      },
+      "id": "c3",
+      "name": "Set - Extrair e classificar",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 560]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "tel",
+              "leftValue": "={{ $json.telefone }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c4",
+      "name": "Filter - tem telefone",
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [640, 560]
+    },
+    {
+      "parameters": {
+        "operation": "lookup",
+        "documentId": { "__rl": true, "value": "PLACEHOLDER_SPREADSHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "PLACEHOLDER_SHEET_NAME", "mode": "name" },
+        "filtersUI": {
+          "values": [
+            { "lookupColumn": "telefone", "lookupValue": "={{ $json.telefone }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c5",
+      "name": "Sheets - Lookup contato",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [860, 560],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PLACEHOLDER_GS_CRED_ID",
+          "name": "Google Sheets - Luz da Lua"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            { "id": "m1", "name": "telefone", "type": "string", "value": "={{ $('Set - Extrair e classificar').item.json.telefone }}" },
+            { "id": "m2", "name": "texto", "type": "string", "value": "={{ $('Set - Extrair e classificar').item.json.texto }}" },
+            { "id": "m3", "name": "button_payload", "type": "string", "value": "={{ $('Set - Extrair e classificar').item.json.button_payload }}" },
+            { "id": "m4", "name": "is_optout", "type": "boolean", "value": "={{ $('Set - Extrair e classificar').item.json.is_optout }}" },
+            { "id": "m5", "name": "is_positivo", "type": "boolean", "value": "={{ $('Set - Extrair e classificar').item.json.is_positivo }}" },
+            { "id": "m6", "name": "is_negativo", "type": "boolean", "value": "={{ $('Set - Extrair e classificar').item.json.is_negativo }}" },
+            { "id": "m7", "name": "nome", "type": "string", "value": "={{ $json.nome }}" },
+            { "id": "m8", "name": "segmento", "type": "string", "value": "={{ $json.segmento }}" },
+            { "id": "m9", "name": "status_contato", "type": "string", "value": "={{ $json.status_contato }}" },
+            { "id": "ma", "name": "opt_out", "type": "string", "value": "={{ $json.opt_out }}" }
+          ]
+        },
+        "options": { "includeOtherFields": false }
+      },
+      "id": "c6",
+      "name": "Set - Merge classificação + planilha",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1080, 560]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+                "conditions": [
+                  {
+                    "id": "out",
+                    "leftValue": "={{ $json.opt_out }}",
+                    "rightValue": "sim",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ja-opt-out"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+                "conditions": [
+                  {
+                    "id": "optin",
+                    "leftValue": "={{ $json.status_contato }}",
+                    "rightValue": "aguardando_resposta_optin",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "opt-in"
+            },
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+                "conditions": [
+                  {
+                    "id": "camp",
+                    "leftValue": "={{ $json.status_contato }}",
+                    "rightValue": "campanha_enviada",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "campanha"
+            }
+          ]
+        },
+        "options": { "fallbackOutput": "extra", "renameFallbackOutput": "fallback" }
+      },
+      "id": "c7",
+      "name": "Switch - status_contato",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [1320, 560]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "5a",
+              "leftValue": "={{ $json.button_payload === 'OPTIN_NAO' || $json.button_payload === 'NÃO' || $json.is_optout === true }}",
+              "rightValue": "true",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c8",
+      "name": "IF 5a - opt-in: quer parar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1580, 360]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "5b",
+              "leftValue": "={{ $json.button_payload === 'OPTIN_SIM' || $json.button_payload === 'SIM' || $json.is_positivo === true }}",
+              "rightValue": "true",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c9",
+      "name": "IF 5b - opt-in: positivo?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1820, 460]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "__rl": true, "value": "PLACEHOLDER_SPREADSHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "PLACEHOLDER_SHEET_NAME", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["telefone"],
+          "value": {
+            "telefone": "={{ $json.telefone }}",
+            "opt_in": "nao",
+            "opt_out": "sim",
+            "status_contato": "opt_out",
+            "data_ultima_resposta": "={{ $now.toISO() }}",
+            "resposta_ultima_campanha": "={{ $json.texto }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "c10",
+      "name": "Sheets - 6a-out (opt-out)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1820, 240],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PLACEHOLDER_GS_CRED_ID",
+          "name": "Google Sheets - Luz da Lua"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "__rl": true, "value": "PLACEHOLDER_SPREADSHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "PLACEHOLDER_SHEET_NAME", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["telefone"],
+          "value": {
+            "telefone": "={{ $json.telefone }}",
+            "opt_in": "sim",
+            "data_opt_in": "={{ $now.toISO() }}",
+            "status_contato": "ativo",
+            "data_ultima_resposta": "={{ $now.toISO() }}",
+            "texto_opt_in": "={{ $json.texto }}",
+            "versao_template_optin": "solicitar_consentimento_v1"
+          }
+        },
+        "options": {}
+      },
+      "id": "c11",
+      "name": "Sheets - 6a-sim (opt-in OK)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2060, 380],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PLACEHOLDER_GS_CRED_ID",
+          "name": "Google Sheets - Luz da Lua"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": { "__rl": true, "value": "PLACEHOLDER_FLUXO_B_ID", "mode": "id" },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "telefone": "={{ $json.telefone }}",
+            "nome": "={{ $json.nome }}",
+            "segmento": "={{ $json.segmento }}"
+          }
+        },
+        "options": { "waitForSubWorkflow": false }
+      },
+      "id": "c12",
+      "name": "Execute Fluxo B (PDF)",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [2280, 380],
+      "notes": "Substitua PLACEHOLDER_FLUXO_B_ID pelo ID do workflow Fluxo B após importá-lo."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "__rl": true, "value": "PLACEHOLDER_SPREADSHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "PLACEHOLDER_SHEET_NAME", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["telefone"],
+          "value": {
+            "telefone": "={{ $json.telefone }}",
+            "status_contato": "revisao_manual",
+            "resposta_ultima_campanha": "={{ $json.texto }}",
+            "data_ultima_resposta": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "c13",
+      "name": "Sheets - 6a-revisao",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2060, 540],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PLACEHOLDER_GS_CRED_ID",
+          "name": "Google Sheets - Luz da Lua"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "5c",
+              "leftValue": "={{ $json.is_optout === true }}",
+              "rightValue": "true",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c14",
+      "name": "IF 5c - campanha: quer parar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1580, 720]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "loose" },
+          "conditions": [
+            {
+              "id": "5d",
+              "leftValue": "={{ $json.is_positivo === true }}",
+              "rightValue": "true",
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "c15",
+      "name": "IF 5d - campanha: interesse?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [1820, 820]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "__rl": true, "value": "PLACEHOLDER_SPREADSHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "PLACEHOLDER_SHEET_NAME", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["telefone"],
+          "value": {
+            "telefone": "={{ $json.telefone }}",
+            "opt_in": "nao",
+            "opt_out": "sim",
+            "status_contato": "opt_out",
+            "data_ultima_resposta": "={{ $now.toISO() }}",
+            "resposta_ultima_campanha": "={{ $json.texto }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "c16",
+      "name": "Sheets - 6c-out (opt-out)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1820, 660],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PLACEHOLDER_GS_CRED_ID",
+          "name": "Google Sheets - Luz da Lua"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "__rl": true, "value": "PLACEHOLDER_SPREADSHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "PLACEHOLDER_SHEET_NAME", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["telefone"],
+          "value": {
+            "telefone": "={{ $json.telefone }}",
+            "interessado": "sim",
+            "status_contato": "interessada",
+            "resposta_ultima_campanha": "={{ $json.texto }}",
+            "data_ultima_resposta": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "c17",
+      "name": "Sheets - 6b-interesse",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2060, 740],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PLACEHOLDER_GS_CRED_ID",
+          "name": "Google Sheets - Luz da Lua"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "__rl": true, "value": "PLACEHOLDER_SPREADSHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "PLACEHOLDER_SHEET_NAME", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["telefone"],
+          "value": {
+            "telefone": "={{ $json.telefone }}",
+            "interessado": "nao",
+            "status_contato": "sem_interesse",
+            "resposta_ultima_campanha": "={{ $json.texto }}",
+            "data_ultima_resposta": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "c18",
+      "name": "Sheets - 6b-sem",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [2060, 900],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PLACEHOLDER_GS_CRED_ID",
+          "name": "Google Sheets - Luz da Lua"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "__rl": true, "value": "PLACEHOLDER_SPREADSHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "PLACEHOLDER_SHEET_NAME", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["telefone"],
+          "value": {
+            "telefone": "={{ $json.telefone }}",
+            "resposta_ultima_campanha": "={{ $json.texto }}",
+            "data_ultima_resposta": "={{ $now.toISO() }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "c19",
+      "name": "Sheets - Fallback (registra resposta)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1580, 960],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PLACEHOLDER_GS_CRED_ID",
+          "name": "Google Sheets - Luz da Lua"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "c20",
+      "name": "NoOp - já era opt_out",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [1580, 80]
+    }
+  ],
+  "connections": {
+    "Webhook POST WhatsApp": {
+      "main": [
+        [
+          { "node": "Respond 200 (ack imediato)", "type": "main", "index": 0 },
+          { "node": "Set - Extrair e classificar", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Set - Extrair e classificar": { "main": [[{ "node": "Filter - tem telefone", "type": "main", "index": 0 }]] },
+    "Filter - tem telefone": { "main": [[{ "node": "Sheets - Lookup contato", "type": "main", "index": 0 }]] },
+    "Sheets - Lookup contato": { "main": [[{ "node": "Set - Merge classificação + planilha", "type": "main", "index": 0 }]] },
+    "Set - Merge classificação + planilha": { "main": [[{ "node": "Switch - status_contato", "type": "main", "index": 0 }]] },
+    "Switch - status_contato": {
+      "main": [
+        [{ "node": "NoOp - já era opt_out", "type": "main", "index": 0 }],
+        [{ "node": "IF 5a - opt-in: quer parar?", "type": "main", "index": 0 }],
+        [{ "node": "IF 5c - campanha: quer parar?", "type": "main", "index": 0 }],
+        [{ "node": "Sheets - Fallback (registra resposta)", "type": "main", "index": 0 }]
+      ]
+    },
+    "IF 5a - opt-in: quer parar?": {
+      "main": [
+        [{ "node": "Sheets - 6a-out (opt-out)", "type": "main", "index": 0 }],
+        [{ "node": "IF 5b - opt-in: positivo?", "type": "main", "index": 0 }]
+      ]
+    },
+    "IF 5b - opt-in: positivo?": {
+      "main": [
+        [{ "node": "Sheets - 6a-sim (opt-in OK)", "type": "main", "index": 0 }],
+        [{ "node": "Sheets - 6a-revisao", "type": "main", "index": 0 }]
+      ]
+    },
+    "Sheets - 6a-sim (opt-in OK)": { "main": [[{ "node": "Execute Fluxo B (PDF)", "type": "main", "index": 0 }]] },
+    "IF 5c - campanha: quer parar?": {
+      "main": [
+        [{ "node": "Sheets - 6c-out (opt-out)", "type": "main", "index": 0 }],
+        [{ "node": "IF 5d - campanha: interesse?", "type": "main", "index": 0 }]
+      ]
+    },
+    "IF 5d - campanha: interesse?": {
+      "main": [
+        [{ "node": "Sheets - 6b-interesse", "type": "main", "index": 0 }],
+        [{ "node": "Sheets - 6b-sem", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

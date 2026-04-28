@@ -1,0 +1,110 @@
+{
+  "name": "Fluxo B - Pós-consentimento + PDF (Luz da Lua)",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "b1",
+      "name": "When Executed by Another Workflow",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300],
+      "notes": "Recebe os campos: telefone, nome, segmento (vindos do Fluxo C)."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{$env.WHATSAPP_PHONE_NUMBER_ID}}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.telefone }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": \"Separei um catálogo com {{ $json.segmento || 'novidades' }} da Luz da Lua que estão em promoção e queria te mostrar.\\nSe gostar de algum modelo, me manda um print por aqui que eu te ajudo na escolha.\\nSe preferir não receber mais mensagens assim, é só me avisar.\\n\\nAnni.\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b2",
+      "name": "WhatsApp - Mensagem texto",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PLACEHOLDER_WA_CRED_ID",
+          "name": "WhatsApp Cloud API - Bearer"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 3,
+        "unit": "seconds"
+      },
+      "id": "b3",
+      "name": "Wait 3s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{$env.WHATSAPP_PHONE_NUMBER_ID}}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $('When Executed by Another Workflow').item.json.telefone }}\",\n  \"type\": \"document\",\n  \"document\": {\n    \"link\": \"{{$env.CATALOGO_PDF_URL}}\",\n    \"filename\": \"catalogo-luz-da-lua.pdf\"\n  }\n}",
+        "options": {}
+      },
+      "id": "b4",
+      "name": "WhatsApp - Envia PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PLACEHOLDER_WA_CRED_ID",
+          "name": "WhatsApp Cloud API - Bearer"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "__rl": true, "value": "PLACEHOLDER_SPREADSHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "PLACEHOLDER_SHEET_NAME", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["telefone"],
+          "value": {
+            "telefone": "={{ $('When Executed by Another Workflow').item.json.telefone }}",
+            "ultima_campanha": "catalogo_pdf_inicial",
+            "data_ultimo_envio": "={{ $now.toISO() }}",
+            "status_contato": "campanha_enviada",
+            "resposta_ultima_campanha": "",
+            "interessado": ""
+          }
+        },
+        "options": {}
+      },
+      "id": "b5",
+      "name": "Sheets - Update campanha_enviada",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1200, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PLACEHOLDER_GS_CRED_ID",
+          "name": "Google Sheets - Luz da Lua"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "When Executed by Another Workflow": { "main": [[{ "node": "WhatsApp - Mensagem texto", "type": "main", "index": 0 }]] },
+    "WhatsApp - Mensagem texto": { "main": [[{ "node": "Wait 3s", "type": "main", "index": 0 }]] },
+    "Wait 3s": { "main": [[{ "node": "WhatsApp - Envia PDF", "type": "main", "index": 0 }]] },
+    "WhatsApp - Envia PDF": { "main": [[{ "node": "Sheets - Update campanha_enviada", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

@@ -1,0 +1,143 @@
+{
+  "name": "Fluxo D - Campanhas Recorrentes (Luz da Lua)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            { "field": "cronExpression", "expression": "0 13 * * 1" }
+          ]
+        }
+      },
+      "id": "d1",
+      "name": "Schedule semanal segunda 10h BRT",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 300],
+      "notes": "Cron 0 13 * * 1 = segunda 10h BRT (assumindo UTC). Use 0 10 * * 1 se GENERIC_TIMEZONE=America/Sao_Paulo."
+    },
+    {
+      "parameters": {
+        "documentId": { "__rl": true, "value": "PLACEHOLDER_SPREADSHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "PLACEHOLDER_SHEET_NAME", "mode": "name" },
+        "options": {}
+      },
+      "id": "d2",
+      "name": "Sheets - Get rows",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [460, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PLACEHOLDER_GS_CRED_ID",
+          "name": "Google Sheets - Luz da Lua"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filtra contatos elegíveis para nova campanha:\n// - opt_in = sim\n// - opt_out vazio\n// - status em [ativo, sem_interesse, atendida]\n// - data_ultimo_envio vazia ou >= 7 dias atrás\nconst SETE_DIAS_MS = 7 * 24 * 60 * 60 * 1000;\nconst agora = Date.now();\nconst statusOk = new Set(['ativo', 'sem_interesse', 'atendida']);\n\nreturn items.filter(({ json }) => {\n  if (json.opt_in !== 'sim') return false;\n  if (json.opt_out === 'sim') return false;\n  if (!statusOk.has(json.status_contato)) return false;\n\n  const dt = json.data_ultimo_envio;\n  if (!dt) return true;\n  const t = Date.parse(dt);\n  if (Number.isNaN(t)) return true;\n  return (agora - t) >= SETE_DIAS_MS;\n});"
+      },
+      "id": "d3",
+      "name": "Code - Filtro elegíveis (7 dias)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": { "maxItems": 50 },
+      "id": "d4",
+      "name": "Limit por execução",
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [900, 300]
+    },
+    {
+      "parameters": { "batchSize": 1, "options": {} },
+      "id": "d5",
+      "name": "SplitInBatches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v21.0/{{$env.WHATSAPP_PHONE_NUMBER_ID}}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $json.telefone }}\",\n  \"type\": \"template\",\n  \"template\": {\n    \"name\": \"campanha_promo_mensal\",\n    \"language\": { \"code\": \"pt_BR\" },\n    \"components\": [\n      {\n        \"type\": \"body\",\n        \"parameters\": [\n          { \"type\": \"text\", \"text\": \"{{ $json.nome }}\" },\n          { \"type\": \"text\", \"text\": \"{{ $json.segmento || 'novidades' }}\" }\n        ]\n      }\n    ]\n  }\n}",
+        "options": { "response": { "response": { "fullResponse": false, "neverError": true } } }
+      },
+      "id": "d6",
+      "name": "WhatsApp - Send campanha",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "PLACEHOLDER_WA_CRED_ID",
+          "name": "WhatsApp Cloud API - Bearer"
+        }
+      },
+      "onError": "continueRegularOutput",
+      "notes": "Substitua 'campanha_promo_mensal' pelo nome real do seu template MARKETING aprovado pela Meta."
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": { "__rl": true, "value": "PLACEHOLDER_SPREADSHEET_ID", "mode": "id" },
+        "sheetName": { "__rl": true, "value": "PLACEHOLDER_SHEET_NAME", "mode": "name" },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "matchingColumns": ["telefone"],
+          "value": {
+            "telefone": "={{ $('SplitInBatches').item.json.telefone }}",
+            "ultima_campanha": "campanha_promo_mensal",
+            "data_ultimo_envio": "={{ $now.toISO() }}",
+            "status_contato": "campanha_enviada",
+            "resposta_ultima_campanha": "",
+            "interessado": ""
+          }
+        },
+        "options": {}
+      },
+      "id": "d7",
+      "name": "Sheets - Update campanha_enviada",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [1560, 300],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PLACEHOLDER_GS_CRED_ID",
+          "name": "Google Sheets - Luz da Lua"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": "={{ Math.floor(Math.random() * 40) + 20 }}",
+        "unit": "seconds"
+      },
+      "id": "d8",
+      "name": "Wait 20-60s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1780, 300]
+    }
+  ],
+  "connections": {
+    "Schedule semanal segunda 10h BRT": { "main": [[{ "node": "Sheets - Get rows", "type": "main", "index": 0 }]] },
+    "Sheets - Get rows": { "main": [[{ "node": "Code - Filtro elegíveis (7 dias)", "type": "main", "index": 0 }]] },
+    "Code - Filtro elegíveis (7 dias)": { "main": [[{ "node": "Limit por execução", "type": "main", "index": 0 }]] },
+    "Limit por execução": { "main": [[{ "node": "SplitInBatches", "type": "main", "index": 0 }]] },
+    "SplitInBatches": { "main": [[{ "node": "WhatsApp - Send campanha", "type": "main", "index": 0 }]] },
+    "WhatsApp - Send campanha": { "main": [[{ "node": "Sheets - Update campanha_enviada", "type": "main", "index": 0 }]] },
+    "Sheets - Update campanha_enviada": { "main": [[{ "node": "Wait 20-60s", "type": "main", "index": 0 }]] },
+    "Wait 20-60s": { "main": [[{ "node": "SplitInBatches", "type": "main", "index": 0 }]] }
+  },
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}
