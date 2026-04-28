@@ -75,11 +75,15 @@ export function WorkoutExecutionScreen({
   navigation,
 }: WorkoutExecutionScreenProps): React.ReactElement | null {
   const { workoutId } = route.params;
-  const { workouts } = useWorkoutContext();
+  const { workouts, addSession } = useWorkoutContext();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
   const workout = workouts[workoutId];
+
+  // Wall-clock timestamp when the user opened this screen
+  const startedAtRef = useRef<string>(new Date().toISOString());
+  const sessionPersistedRef = useRef(false);
 
   // Sorted lists. Memoized so timer effect doesn't re-trigger on every render.
   const warmups = useMemo(
@@ -184,6 +188,31 @@ export function WorkoutExecutionScreen({
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timerSeconds, timerRunning]);
+
+  // Persist the session exactly once when we transition into the 'done' phase.
+  useEffect(() => {
+    if (current.phase !== 'done' || sessionPersistedRef.current || !workout) return;
+    sessionPersistedRef.current = true;
+    const now = new Date();
+    const startedAt = startedAtRef.current;
+    const durationSeconds = Math.max(
+      0,
+      Math.round((now.getTime() - new Date(startedAt).getTime()) / 1000)
+    );
+    const c = completedRef.current;
+    addSession({
+      id: `s-${now.getTime().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
+      workoutId,
+      workoutName: workout.name,
+      startedAt,
+      completedAt: now.toISOString(),
+      durationSeconds,
+      warmupsCompleted: c.warmups,
+      exercisesCompleted: c.exercises,
+      setsCompleted: c.sets,
+      stretchesCompleted: c.stretches,
+    });
+  }, [current.phase, workout, workoutId, addSession]);
 
   const confirmExit = useCallback(() => {
     if (current.phase === 'done') {

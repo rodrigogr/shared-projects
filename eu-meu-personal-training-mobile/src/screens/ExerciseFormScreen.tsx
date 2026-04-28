@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -50,6 +51,7 @@ export function ExerciseFormScreen({ route, navigation }: ExerciseFormScreenProp
 
   const [name, setName] = useState(existingExercise?.name || '');
   const [executionLink, setExecutionLink] = useState(existingExercise?.executionLink || '');
+  const [mediaUri, setMediaUri] = useState(existingExercise?.mediaUri || '');
   const [sets, setSets] = useState(existingExercise?.sets?.toString() || '4');
   const [reps, setReps] = useState(existingExercise?.reps || '8-12');
   const [restSeconds, setRestSeconds] = useState(existingExercise?.restSeconds?.toString() || '90');
@@ -97,7 +99,7 @@ export function ExerciseFormScreen({ route, navigation }: ExerciseFormScreenProp
     const exerciseData: Exercise = {
       id: existingExercise?.id || generateId(),
       name: name.trim(),
-      mediaUri: undefined,
+      mediaUri: mediaUri.trim() || undefined,
       executionLink: executionLink.trim() || undefined,
       sets: parseInt(sets, 10),
       reps: reps.trim(),
@@ -170,6 +172,21 @@ export function ExerciseFormScreen({ route, navigation }: ExerciseFormScreenProp
           placeholder: 'https://youtube.com/...',
           keyboardType: 'url',
         })}
+
+        {renderInput('Mídia (URL de imagem)', mediaUri, setMediaUri, {
+          placeholder: 'https://exemplo.com/imagem.jpg',
+          keyboardType: 'url',
+        })}
+        {!!mediaUri.trim() && (
+          <View style={styles.mediaPreviewContainer}>
+            <Image
+              source={{ uri: mediaUri.trim() }}
+              style={styles.mediaPreview}
+              resizeMode="cover"
+              onError={() => {}}
+            />
+          </View>
+        )}
 
         <View style={styles.row}>
           <View style={styles.halfInput}>

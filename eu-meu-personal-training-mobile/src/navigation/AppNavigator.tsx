@@ -14,6 +14,8 @@ import {
   StretchFormScreen,
   WorkoutFormScreen,
   WorkoutExecutionScreen,
+  WorkoutHistoryScreen,
+  BackupScreen,
 } from '../screens';
 import { useTheme } from '../context/ThemeContext';
 import { useWorkoutContext } from '../context/WorkoutContext';
@@ -98,6 +100,16 @@ export function AppNavigator(): React.ReactElement {
           title: workouts[route.params.workoutId]?.name ?? 'Treino',
           gestureEnabled: false,
         })}
+      />
+      <Stack.Screen
+        name="History"
+        component={WorkoutHistoryScreen}
+        options={{ title: 'Histórico' }}
+      />
+      <Stack.Screen
+        name="Backup"
+        component={BackupScreen}
+        options={{ title: 'Backup' }}
       />
     </Stack.Navigator>
   );

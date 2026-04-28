@@ -32,6 +32,8 @@ export type RootStackParamList = {
   WorkoutExecution: {
     workoutId: string;
   };
+  History: undefined;
+  Backup: undefined;
 };
 
 /**
@@ -42,6 +44,8 @@ export type WorkoutScreenNavigationProp = StackNavigationProp<RootStackParamList
 export type ExerciseFormScreenNavigationProp = StackNavigationProp<RootStackParamList, 'ExerciseForm'>;
 export type WarmupFormScreenNavigationProp = StackNavigationProp<RootStackParamList, 'WarmupForm'>;
 export type StretchFormScreenNavigationProp = StackNavigationProp<RootStackParamList, 'StretchForm'>;
+export type HistoryScreenNavigationProp = StackNavigationProp<RootStackParamList, 'History'>;
+export type BackupScreenNavigationProp = StackNavigationProp<RootStackParamList, 'Backup'>;
 export type WorkoutFormScreenNavigationProp = StackNavigationProp<RootStackParamList, 'WorkoutForm'>;
 export type WorkoutExecutionScreenNavigationProp = StackNavigationProp<RootStackParamList, 'WorkoutExecution'>;
 
@@ -53,6 +57,8 @@ export type WorkoutScreenRouteProp = RouteProp<RootStackParamList, 'Workout'>;
 export type ExerciseFormScreenRouteProp = RouteProp<RootStackParamList, 'ExerciseForm'>;
 export type WarmupFormScreenRouteProp = RouteProp<RootStackParamList, 'WarmupForm'>;
 export type StretchFormScreenRouteProp = RouteProp<RootStackParamList, 'StretchForm'>;
+export type HistoryScreenRouteProp = RouteProp<RootStackParamList, 'History'>;
+export type BackupScreenRouteProp = RouteProp<RootStackParamList, 'Backup'>;
 export type WorkoutFormScreenRouteProp = RouteProp<RootStackParamList, 'WorkoutForm'>;
 export type WorkoutExecutionScreenRouteProp = RouteProp<RootStackParamList, 'WorkoutExecution'>;
 
@@ -100,5 +106,26 @@ export interface Workout {
 export interface StorageSchema {
   version: number;
   workouts: Record<string, Workout>;
+  sessions?: WorkoutSession[];
   lastUpdated: string;
+}
+
+/**
+ * A completed workout execution session. Persisted in history so the user can
+ * track adherence and progress over time.
+ */
+export interface WorkoutSession {
+  id: string;
+  workoutId: string;
+  workoutName: string;
+  /** ISO timestamp when the user started the execution */
+  startedAt: string;
+  /** ISO timestamp when the user reached the "done" phase */
+  completedAt: string;
+  /** Total elapsed wall-clock time in seconds */
+  durationSeconds: number;
+  warmupsCompleted: number;
+  exercisesCompleted: number;
+  setsCompleted: number;
+  stretchesCompleted: number;
 }

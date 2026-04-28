@@ -183,6 +183,25 @@ export function HomeScreen({ navigation }: HomeScreenProps): React.ReactElement 
             <Text style={styles.addCardIcon}>＋</Text>
             <Text style={styles.addCardText}>Novo treino</Text>
           </TouchableOpacity>
+
+          <View style={styles.quickActionsRow}>
+            <TouchableOpacity
+              style={styles.quickAction}
+              onPress={() => navigation.navigate('History')}
+              testID="open-history"
+            >
+              <Text style={styles.quickActionIcon}>📊</Text>
+              <Text style={styles.quickActionText}>Histórico</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.quickAction}
+              onPress={() => navigation.navigate('Backup')}
+              testID="open-backup"
+            >
+              <Text style={styles.quickActionIcon}>💾</Text>
+              <Text style={styles.quickActionText}>Backup</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={styles.footer}>
@@ -337,6 +356,31 @@ function createStyles(colors: ThemePalette) {
       marginTop: SPACING.xs,
       fontSize: FONT_SIZES.lg,
       color: colors.primary,
+      fontWeight: '600',
+    },
+    quickActionsRow: {
+      flexDirection: 'row',
+      marginTop: SPACING.sm,
+      marginBottom: SPACING.lg,
+    },
+    quickAction: {
+      flex: 1,
+      paddingVertical: SPACING.md,
+      marginHorizontal: SPACING.xs,
+      borderRadius: BORDER_RADIUS.lg,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    quickActionIcon: {
+      fontSize: FONT_SIZES.xxl,
+      marginBottom: SPACING.xs,
+    },
+    quickActionText: {
+      fontSize: FONT_SIZES.md,
+      color: colors.text,
       fontWeight: '600',
     },
     footer: {

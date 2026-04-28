@@ -8,6 +8,7 @@ import {
   StorageSchema,
   Workout,
   WorkoutCategory,
+  WorkoutSession,
   Exercise,
   WarmupActivity,
   StretchActivity,
@@ -33,12 +34,14 @@ export interface DeserializationResult {
  * **Validates: Requirements 9.4**
  */
 export function serializeWorkouts(
-  workouts: Record<WorkoutCategory, Workout>
+  workouts: Record<WorkoutCategory, Workout>,
+  sessions: WorkoutSession[] = []
 ): SerializationResult {
   try {
     const schema: StorageSchema = {
       version: CURRENT_SCHEMA_VERSION,
       workouts,
+      sessions,
       lastUpdated: new Date().toISOString(),
     };
     
@@ -102,15 +105,17 @@ function isValidStretch(obj: unknown): obj is StretchActivity {
 }
 
 /**
- * Validates that an object has the expected Workout structure
+ * Validates that an object has the expected Workout structure.
+ * IDs are now arbitrary strings (no longer restricted to A/B/C/D), but the
+ * id MUST be a non-empty string and the structural fields must all be present.
  */
 function isValidWorkout(obj: unknown): obj is Workout {
   if (typeof obj !== 'object' || obj === null) return false;
   const w = obj as Record<string, unknown>;
-  
+
   if (
     typeof w.id !== 'string' ||
-    !['A', 'B', 'C', 'D'].includes(w.id) ||
+    w.id.length === 0 ||
     typeof w.name !== 'string' ||
     typeof w.description !== 'string' ||
     typeof w.updatedAt !== 'string' ||
@@ -120,7 +125,7 @@ function isValidWorkout(obj: unknown): obj is Workout {
   ) {
     return false;
   }
-  
+
   return (
     w.warmups.every(isValidWarmup) &&
     w.exercises.every(isValidExercise) &&
@@ -129,12 +134,34 @@ function isValidWorkout(obj: unknown): obj is Workout {
 }
 
 /**
- * Validates the complete storage schema structure
+ * Validates a WorkoutSession entry.
+ */
+function isValidSession(obj: unknown): obj is WorkoutSession {
+  if (typeof obj !== 'object' || obj === null) return false;
+  const s = obj as Record<string, unknown>;
+  return (
+    typeof s.id === 'string' &&
+    typeof s.workoutId === 'string' &&
+    typeof s.workoutName === 'string' &&
+    typeof s.startedAt === 'string' &&
+    typeof s.completedAt === 'string' &&
+    typeof s.durationSeconds === 'number' &&
+    typeof s.warmupsCompleted === 'number' &&
+    typeof s.exercisesCompleted === 'number' &&
+    typeof s.setsCompleted === 'number' &&
+    typeof s.stretchesCompleted === 'number'
+  );
+}
+
+/**
+ * Validates the complete storage schema structure.
+ * Accepts any non-empty workouts record (no required category set).
+ * `sessions` is optional and, when present, must be an array of valid sessions.
  */
 function isValidStorageSchema(obj: unknown): obj is StorageSchema {
   if (typeof obj !== 'object' || obj === null) return false;
   const schema = obj as Record<string, unknown>;
-  
+
   if (
     typeof schema.version !== 'number' ||
     typeof schema.lastUpdated !== 'string' ||
@@ -143,13 +170,19 @@ function isValidStorageSchema(obj: unknown): obj is StorageSchema {
   ) {
     return false;
   }
-  
+
   const workouts = schema.workouts as Record<string, unknown>;
-  const categories: WorkoutCategory[] = ['A', 'B', 'C', 'D'];
-  
-  return categories.every(
-    (cat) => cat in workouts && isValidWorkout(workouts[cat])
-  );
+  const ids = Object.keys(workouts);
+  if (!ids.every((id) => isValidWorkout(workouts[id]) && (workouts[id] as Workout).id === id)) {
+    return false;
+  }
+
+  if (schema.sessions !== undefined) {
+    if (!Array.isArray(schema.sessions)) return false;
+    if (!schema.sessions.every(isValidSession)) return false;
+  }
+
+  return true;
 }
 
 /**
@@ -184,11 +217,13 @@ export function deserializeWorkouts(jsonString: string): DeserializationResult {
  * This ensures dates and other values are properly handled
  */
 export function createStorageSchema(
-  workouts: Record<WorkoutCategory, Workout>
+  workouts: Record<WorkoutCategory, Workout>,
+  sessions: WorkoutSession[] = []
 ): StorageSchema {
   return {
     version: CURRENT_SCHEMA_VERSION,
     workouts,
+    sessions,
     lastUpdated: new Date().toISOString(),
   };
 }

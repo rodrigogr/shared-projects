@@ -15,6 +15,7 @@ import React, {
 import {
   Workout,
   WorkoutCategory,
+  WorkoutSession,
   Exercise,
   WarmupActivity,
   StretchActivity,
@@ -25,6 +26,7 @@ import { validateExerciseName } from '../utils/validators';
 // Action types
 type WorkoutAction =
   | { type: 'SET_WORKOUTS'; payload: Record<string, Workout> }
+  | { type: 'SET_SESSIONS'; payload: WorkoutSession[] }
   | { type: 'SET_LOADING'; payload: boolean }
   | { type: 'ADD_WORKOUT'; payload: Workout }
   | { type: 'UPDATE_WORKOUT'; payload: { workoutId: string; data: Partial<Workout> } }
@@ -36,19 +38,26 @@ type WorkoutAction =
   | { type: 'ADD_WARMUP'; payload: { workoutId: string; warmup: WarmupActivity } }
   | { type: 'UPDATE_WARMUP'; payload: { workoutId: string; warmupId: string; data: Partial<WarmupActivity> } }
   | { type: 'DELETE_WARMUP'; payload: { workoutId: string; warmupId: string } }
+  | { type: 'REORDER_WARMUPS'; payload: { workoutId: string; warmupIds: string[] } }
   | { type: 'ADD_STRETCH'; payload: { workoutId: string; stretch: StretchActivity } }
   | { type: 'UPDATE_STRETCH'; payload: { workoutId: string; stretchId: string; data: Partial<StretchActivity> } }
-  | { type: 'DELETE_STRETCH'; payload: { workoutId: string; stretchId: string } };
+  | { type: 'DELETE_STRETCH'; payload: { workoutId: string; stretchId: string } }
+  | { type: 'REORDER_STRETCHES'; payload: { workoutId: string; stretchIds: string[] } }
+  | { type: 'ADD_SESSION'; payload: WorkoutSession }
+  | { type: 'DELETE_SESSION'; payload: string }
+  | { type: 'REPLACE_ALL'; payload: { workouts: Record<string, Workout>; sessions: WorkoutSession[] } };
 
 // State interface
 interface WorkoutState {
   workouts: Record<string, Workout>;
+  sessions: WorkoutSession[];
   isLoading: boolean;
 }
 
 // Context value interface
 export interface WorkoutContextValue {
   workouts: Record<string, Workout>;
+  sessions: WorkoutSession[];
   isLoading: boolean;
   addWorkout: (workout: Workout) => void;
   updateWorkout: (workoutId: string, data: Partial<Workout>) => void;
@@ -60,9 +69,14 @@ export interface WorkoutContextValue {
   addWarmup: (workoutId: string, warmup: WarmupActivity) => void;
   updateWarmup: (workoutId: string, warmupId: string, data: Partial<WarmupActivity>) => void;
   deleteWarmup: (workoutId: string, warmupId: string) => void;
+  reorderWarmups: (workoutId: string, warmupIds: string[]) => void;
   addStretch: (workoutId: string, stretch: StretchActivity) => void;
   updateStretch: (workoutId: string, stretchId: string, data: Partial<StretchActivity>) => void;
   deleteStretch: (workoutId: string, stretchId: string) => void;
+  reorderStretches: (workoutId: string, stretchIds: string[]) => void;
+  addSession: (session: WorkoutSession) => void;
+  deleteSession: (sessionId: string) => void;
+  replaceAll: (data: { workouts: Record<string, Workout>; sessions: WorkoutSession[] }) => void;
 }
 
 
@@ -75,6 +89,9 @@ function workoutReducer(state: WorkoutState, action: WorkoutAction): WorkoutStat
   switch (action.type) {
     case 'SET_WORKOUTS':
       return { ...state, workouts: action.payload };
+
+    case 'SET_SESSIONS':
+      return { ...state, sessions: action.payload };
 
     case 'SET_LOADING':
       return { ...state, isLoading: action.payload };
@@ -290,6 +307,68 @@ function workoutReducer(state: WorkoutState, action: WorkoutAction): WorkoutStat
       };
     }
 
+    case 'REORDER_WARMUPS': {
+      const { workoutId, warmupIds } = action.payload;
+      const workout = state.workouts[workoutId];
+      const map = new Map(workout.warmups.map((w) => [w.id, w]));
+      const reordered = warmupIds
+        .map((id, index) => {
+          const w = map.get(id);
+          return w ? { ...w, order: index } : null;
+        })
+        .filter((w): w is WarmupActivity => w !== null);
+      return {
+        ...state,
+        workouts: {
+          ...state.workouts,
+          [workoutId]: {
+            ...workout,
+            warmups: reordered,
+            updatedAt: new Date().toISOString(),
+          },
+        },
+      };
+    }
+
+    case 'REORDER_STRETCHES': {
+      const { workoutId, stretchIds } = action.payload;
+      const workout = state.workouts[workoutId];
+      const map = new Map(workout.stretches.map((s) => [s.id, s]));
+      const reordered = stretchIds
+        .map((id, index) => {
+          const s = map.get(id);
+          return s ? { ...s, order: index } : null;
+        })
+        .filter((s): s is StretchActivity => s !== null);
+      return {
+        ...state,
+        workouts: {
+          ...state.workouts,
+          [workoutId]: {
+            ...workout,
+            stretches: reordered,
+            updatedAt: new Date().toISOString(),
+          },
+        },
+      };
+    }
+
+    case 'ADD_SESSION':
+      return { ...state, sessions: [action.payload, ...state.sessions] };
+
+    case 'DELETE_SESSION':
+      return {
+        ...state,
+        sessions: state.sessions.filter((s) => s.id !== action.payload),
+      };
+
+    case 'REPLACE_ALL':
+      return {
+        ...state,
+        workouts: action.payload.workouts,
+        sessions: action.payload.sessions,
+      };
+
     default:
       return state;
   }
@@ -302,6 +381,7 @@ const WorkoutContext = createContext<WorkoutContextValue | undefined>(undefined)
 // Initial state
 const initialState: WorkoutState = {
   workouts: createDefaultWorkouts(),
+  sessions: [],
   isLoading: true,
 };
 
@@ -320,15 +400,16 @@ export function WorkoutProvider({ children }: WorkoutProviderProps): React.React
 
   // Load workouts from storage on mount
   useEffect(() => {
-    const loadWorkouts = async () => {
+    const loadAll = async () => {
       dispatch({ type: 'SET_LOADING', payload: true });
-      const storedWorkouts = await load();
-      if (storedWorkouts) {
-        dispatch({ type: 'SET_WORKOUTS', payload: storedWorkouts });
+      const stored = await load();
+      if (stored) {
+        dispatch({ type: 'SET_WORKOUTS', payload: stored.workouts });
+        dispatch({ type: 'SET_SESSIONS', payload: stored.sessions });
       }
       dispatch({ type: 'SET_LOADING', payload: false });
     };
-    loadWorkouts();
+    loadAll();
   }, [load]);
 
   // Auto-save workouts when they change (skip initial load)
@@ -339,9 +420,9 @@ export function WorkoutProvider({ children }: WorkoutProviderProps): React.React
       return;
     }
     if (!state.isLoading) {
-      save(state.workouts);
+      save(state.workouts, state.sessions);
     }
-  }, [state.workouts, state.isLoading, save]);
+  }, [state.workouts, state.sessions, state.isLoading, save]);
 
   /**
    * Add a new workout
@@ -489,8 +570,44 @@ export function WorkoutProvider({ children }: WorkoutProviderProps): React.React
     []
   );
 
+  const reorderWarmups = useCallback(
+    (workoutId: string, warmupIds: string[]): void => {
+      dispatch({ type: 'REORDER_WARMUPS', payload: { workoutId, warmupIds } });
+    },
+    []
+  );
+
+  const reorderStretches = useCallback(
+    (workoutId: string, stretchIds: string[]): void => {
+      dispatch({ type: 'REORDER_STRETCHES', payload: { workoutId, stretchIds } });
+    },
+    []
+  );
+
+  const addSession = useCallback(
+    (session: WorkoutSession): void => {
+      dispatch({ type: 'ADD_SESSION', payload: session });
+    },
+    []
+  );
+
+  const deleteSession = useCallback(
+    (sessionId: string): void => {
+      dispatch({ type: 'DELETE_SESSION', payload: sessionId });
+    },
+    []
+  );
+
+  const replaceAll = useCallback(
+    (data: { workouts: Record<string, Workout>; sessions: WorkoutSession[] }): void => {
+      dispatch({ type: 'REPLACE_ALL', payload: data });
+    },
+    []
+  );
+
   const contextValue: WorkoutContextValue = {
     workouts: state.workouts,
+    sessions: state.sessions,
     isLoading: state.isLoading,
     addWorkout,
     updateWorkout,
@@ -502,9 +619,14 @@ export function WorkoutProvider({ children }: WorkoutProviderProps): React.React
     addWarmup,
     updateWarmup,
     deleteWarmup,
+    reorderWarmups,
     addStretch,
     updateStretch,
     deleteStretch,
+    reorderStretches,
+    addSession,
+    deleteSession,
+    replaceAll,
   };
 
   return (

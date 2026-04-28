@@ -12,6 +12,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
   Platform,
 } from 'react-native';
 import { useWorkoutContext } from '../context/WorkoutContext';
@@ -51,6 +52,8 @@ export function WorkoutScreen({ route, navigation }: WorkoutScreenProps): React.
     deleteWarmup,
     deleteStretch,
     reorderExercises,
+    reorderWarmups,
+    reorderStretches,
     deleteWorkout,
   } = useWorkoutContext();
   const { colors } = useTheme();
@@ -161,18 +164,58 @@ export function WorkoutScreen({ route, navigation }: WorkoutScreenProps): React.
     reorderExercises(workoutId, newOrder);
   };
 
+  const moveItem = <T extends { id: string }>(
+    items: T[],
+    id: string,
+    direction: -1 | 1
+  ): string[] | null => {
+    const idx = items.findIndex((it) => it.id === id);
+    if (idx < 0) return null;
+    const target = idx + direction;
+    if (target < 0 || target >= items.length) return null;
+    const ids = items.map((it) => it.id);
+    [ids[idx], ids[target]] = [ids[target], ids[idx]];
+    return ids;
+  };
+
+  const handleMoveWarmup = (id: string, direction: -1 | 1) => {
+    const newOrder = moveItem(sortedWarmups, id, direction);
+    if (newOrder) reorderWarmups(workoutId, newOrder);
+  };
+
+  const handleMoveStretch = (id: string, direction: -1 | 1) => {
+    const newOrder = moveItem(sortedStretches, id, direction);
+    if (newOrder) reorderStretches(workoutId, newOrder);
+  };
+
   const openLink = (url: string) => {
     if (Platform.OS === 'web') {
       window.open(url, '_blank');
     }
   };
 
-  const renderWarmupItem = (warmup: WarmupActivity) => (
+  const renderWarmupItem = (warmup: WarmupActivity, index: number, total: number) => (
     <View key={warmup.id} style={styles.itemCard}>
       <View style={[styles.itemIndicator, { backgroundColor: colors.warmup }]} />
       <View style={styles.itemContent}>
         <Text style={styles.itemName}>{warmup.name}</Text>
         <Text style={styles.itemDetail}>{warmup.durationSeconds}s</Text>
+      </View>
+      <View style={styles.reorderButtonsCompact}>
+        <TouchableOpacity
+          style={[styles.reorderButton, index === 0 && styles.reorderButtonDisabled]}
+          onPress={() => handleMoveWarmup(warmup.id, -1)}
+          disabled={index === 0}
+        >
+          <Text style={[styles.reorderButtonText, index === 0 && styles.reorderButtonTextDisabled]}>▲</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.reorderButton, index === total - 1 && styles.reorderButtonDisabled]}
+          onPress={() => handleMoveWarmup(warmup.id, 1)}
+          disabled={index === total - 1}
+        >
+          <Text style={[styles.reorderButtonText, index === total - 1 && styles.reorderButtonTextDisabled]}>▼</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.itemActions}>
         <TouchableOpacity
@@ -203,6 +246,13 @@ export function WorkoutScreen({ route, navigation }: WorkoutScreenProps): React.
         <View style={styles.exerciseNumber}>
           <Text style={styles.exerciseNumberText}>{index + 1}</Text>
         </View>
+        {!!exercise.mediaUri && (
+          <Image
+            source={{ uri: exercise.mediaUri }}
+            style={styles.exerciseThumb}
+            resizeMode="cover"
+          />
+        )}
         <View style={styles.exerciseInfo}>
           <Text style={styles.exerciseName}>{exercise.name}</Text>
           <Text style={styles.exerciseDetail}>
@@ -278,7 +328,7 @@ export function WorkoutScreen({ route, navigation }: WorkoutScreenProps): React.
     </View>
   );
 
-  const renderStretchItem = (stretch: StretchActivity) => (
+  const renderStretchItem = (stretch: StretchActivity, index: number, total: number) => (
     <View key={stretch.id} style={styles.itemCard}>
       <View style={[styles.itemIndicator, { backgroundColor: colors.stretch }]} />
       <View style={styles.itemContent}>
@@ -286,6 +336,22 @@ export function WorkoutScreen({ route, navigation }: WorkoutScreenProps): React.
         <Text style={styles.itemDetail}>
           {stretch.durationSeconds}s - {stretch.targetMuscles}
         </Text>
+      </View>
+      <View style={styles.reorderButtonsCompact}>
+        <TouchableOpacity
+          style={[styles.reorderButton, index === 0 && styles.reorderButtonDisabled]}
+          onPress={() => handleMoveStretch(stretch.id, -1)}
+          disabled={index === 0}
+        >
+          <Text style={[styles.reorderButtonText, index === 0 && styles.reorderButtonTextDisabled]}>▲</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.reorderButton, index === total - 1 && styles.reorderButtonDisabled]}
+          onPress={() => handleMoveStretch(stretch.id, 1)}
+          disabled={index === total - 1}
+        >
+          <Text style={[styles.reorderButtonText, index === total - 1 && styles.reorderButtonTextDisabled]}>▼</Text>
+        </TouchableOpacity>
       </View>
       <View style={styles.itemActions}>
         <TouchableOpacity
@@ -339,7 +405,9 @@ export function WorkoutScreen({ route, navigation }: WorkoutScreenProps): React.
         {sortedWarmups.length === 0 ? (
           <Text style={styles.emptyText}>Nenhum aquecimento cadastrado</Text>
         ) : (
-          sortedWarmups.map(renderWarmupItem)
+          sortedWarmups.map((w, i) =>
+            renderWarmupItem(w, i, sortedWarmups.length)
+          )
         )}
       </View>
 
@@ -373,7 +441,9 @@ export function WorkoutScreen({ route, navigation }: WorkoutScreenProps): React.
         {sortedStretches.length === 0 ? (
           <Text style={styles.emptyText}>Nenhum alongamento cadastrado</Text>
         ) : (
-          sortedStretches.map(renderStretchItem)
+          sortedStretches.map((s, i) =>
+            renderStretchItem(s, i, sortedStretches.length)
+          )
         )}
       </View>
     </>
@@ -611,6 +681,13 @@ function createStyles(colors: ThemePalette) {
     exerciseInfo: {
       flex: 1,
     },
+    exerciseThumb: {
+      width: 56,
+      height: 56,
+      borderRadius: BORDER_RADIUS.md,
+      marginRight: SPACING.sm,
+      backgroundColor: colors.surfaceAlt,
+    },
     exerciseName: {
       fontSize: FONT_SIZES.lg,
       fontWeight: '600',
@@ -645,6 +722,10 @@ function createStyles(colors: ThemePalette) {
     },
     reorderButtons: {
       flexDirection: 'row',
+    },
+    reorderButtonsCompact: {
+      flexDirection: 'column',
+      marginRight: SPACING.xs,
     },
     reorderButton: {
       width: TOUCH_TARGETS.small,

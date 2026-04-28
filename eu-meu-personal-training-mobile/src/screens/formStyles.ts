@@ -60,6 +60,18 @@ export function createFormStyles(colors: ThemePalette, accent: string = colors.p
       textAlignVertical: 'top',
       paddingTop: SPACING.sm,
     },
+    mediaPreviewContainer: {
+      marginBottom: SPACING.md,
+      borderRadius: BORDER_RADIUS.md,
+      overflow: 'hidden',
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    mediaPreview: {
+      width: '100%',
+      height: 180,
+    },
     inputError: {
       borderColor: colors.danger,
     },

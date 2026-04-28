@@ -9,3 +9,5 @@ export { ExerciseFormScreen } from './ExerciseFormScreen';
 export { WarmupFormScreen } from './WarmupFormScreen';
 export { StretchFormScreen } from './StretchFormScreen';
 export { WorkoutExecutionScreen } from './WorkoutExecutionScreen';
+export { WorkoutHistoryScreen } from './WorkoutHistoryScreen';
+export { BackupScreen } from './BackupScreen';

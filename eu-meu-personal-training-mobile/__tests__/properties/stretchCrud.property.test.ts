@@ -37,6 +37,7 @@ function createInitialState(): WorkoutState {
   return {
     workouts: createDefaultWorkouts(),
     isLoading: false,
+    sessions: [],
   };
 }
 
