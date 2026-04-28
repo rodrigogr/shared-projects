@@ -8,13 +8,15 @@ precisam ser **templates aprovados** no Meta Business.
 Você cria o template no Meta Business > WhatsApp Manager > Message Templates.
 Depois de aprovado, usa o nome do template no n8n.
 
+> **Versionamento de templates:** sempre que mudar o texto do template de opt-in, crie um novo nome (`solicitar_consentimento_v2`, `_v3`, ...). Isso é obrigatório para auditoria LGPD — você precisa saber **qual texto** a cliente viu quando consentiu. O nome usado é gravado na coluna `versao_template_optin`.
+
 ---
 
 ## Mensagem 1 — Solicitação de Consentimento (Opt-in)
 
 ### Template para aprovar no Meta
 
-**Nome do template:** `solicitar_consentimento`
+**Nome do template:** `solicitar_consentimento` (ref. interna: `solicitar_consentimento_v1`)
 **Categoria:** UTILITY
 **Idioma:** Português (BR)
 
@@ -33,6 +35,12 @@ Você pode mudar de ideia a qualquer momento. 😊
 ```
 
 **Parâmetro {{1}}:** nome da cliente (vem da planilha)
+
+**Botões Quick Reply (recomendado):**
+- Botão 1 — texto: `SIM`, payload/id sugerido: `OPTIN_SIM`
+- Botão 2 — texto: `NÃO`, payload/id sugerido: `OPTIN_NAO`
+
+> Quando a cliente clica no botão, o webhook recebe o `payload`/`id` exato. Isso elimina ambiguidade de classificação por texto. As expressões do Fluxo C já priorizam esses payloads.
 
 ### Variações aceitas pela Meta
 Se o template acima não for aprovado, tente uma versão mais simples:

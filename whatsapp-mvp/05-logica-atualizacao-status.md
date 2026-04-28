@@ -70,12 +70,14 @@
   - `data_ultimo_envio` = agora
 
 ### 2. aguardando_resposta_optin → ativo
-- **Gatilho:** Cliente responde positivamente (SIM, quero, aceito...)
+- **Gatilho:** Cliente responde positivamente (botão SIM, ou texto: SIM, quero, aceito...)
 - **Campos atualizados:**
   - `opt_in` = `sim`
   - `data_opt_in` = data/hora da resposta
   - `status_contato` = `ativo`
   - `data_ultima_resposta` = data/hora da resposta
+  - `texto_opt_in` = texto cru da resposta (auditoria LGPD)
+  - `versao_template_optin` = nome+versão do template (ex.: `solicitar_consentimento_v1`)
 
 ### 3. aguardando_resposta_optin → opt_out
 - **Gatilho:** Cliente responde negativamente (NÃO, não quero...)
@@ -145,9 +147,13 @@
 1. **NUNCA enviar para `opt_out`** — esse é o estado final permanente
 2. **NUNCA enviar para `sem_consentimento`** — precisa passar pelo opt-in primeiro
 3. **NUNCA enviar campanha para `aguardando_resposta_optin`** — ainda não autorizou
-4. **Respeitar intervalo mínimo** entre campanhas (recomendado: 7 dias)
+4. **Respeitar intervalo mínimo de 7 dias** entre campanhas (filtro: `data_ultimo_envio < hoje - 7 dias`)
 5. **Opt-out tem prioridade** sobre qualquer outro status
-6. **Se a resposta for ambígua**, manter o status atual e registrar a resposta para revisão manual
+6. **Se a resposta for ambígua**, marcar `revisao_manual`, registrar resposta e não alterar opt-in/opt-out
+7. **Número inválido (erro Meta 131026)**: marcar `numero_invalido` e nunca mais tentar
+8. **Falha técnica**: incrementar `tentativas_envio`. Após 3 falhas consecutivas, mover para `falha_envio`
+9. **Botão do template tem prioridade** sobre classificação por texto
+10. **Janela de 24h**: mensagens livres (texto/PDF) só podem ser enviadas se a cliente respondeu nas últimas 24h. Fora disso, exige template aprovado.
 
 ---
 
@@ -160,7 +166,10 @@
 | `ativo` | SIM |
 | `campanha_enviada` | NÃO (já recebeu) |
 | `interessada` | NÃO (atender primeiro) |
-| `sem_interesse` | SIM (na próxima campanha) |
+| `sem_interesse` | SIM (respeitando intervalo de 7 dias) |
 | `aguardando_atendimento` | NÃO |
 | `atendida` | SIM |
 | `opt_out` | NUNCA |
+| `numero_invalido` | NUNCA |
+| `falha_envio` | NÃO (revisar manualmente antes) |
+| `revisao_manual` | NÃO (revisar antes) |

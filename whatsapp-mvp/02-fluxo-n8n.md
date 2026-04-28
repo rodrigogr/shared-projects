@@ -5,7 +5,7 @@
 O MVP usa 3 fluxos (workflows) separados no n8n:
 
 1. **Fluxo A** — Captura de Consentimento (Opt-in)
-2. **Fluxo B** — Envio de Campanha
+2. **Fluxo B** — Pós-consentimento + PDF
 3. **Fluxo C** — Recebimento e Classificação de Respostas
 
 ---
@@ -34,11 +34,12 @@ O MVP usa 3 fluxos (workflows) separados no n8n:
 
 **Nó 1 — Schedule Trigger**
 - Tipo: Schedule Trigger
-- Frequência: 1 vez por dia, às 10h
-- Motivo: enviar em horário comercial, sem exagero
+- Frequência: 1 vez por dia, **às 10h no horário de Brasília (America/Sao_Paulo)**
+- Importante: o n8n na nuvem (Railway/n8n Cloud) roda em **UTC** por padrão. Configure a variável de ambiente `GENERIC_TIMEZONE=America/Sao_Paulo` no serviço, **ou** ajuste o cron para `0 13 * * 1-5` (= 10h BRT em UTC, dias úteis)
+- Motivo: enviar em horário comercial em dias úteis, sem exagero. **Evite finais de semana e feriados** — elevam reportes de spam.
 
-**Nó 2 — Google Sheets (Read)**
-- Operação: Read Rows
+**Nó 2 — Google Sheets**
+- Ação: **Get row(s) in sheet**
 - Planilha: planilha_contatos
 - Aba: Contatos
 - Retorna todas as linhas
@@ -79,8 +80,8 @@ O MVP usa 3 fluxos (workflows) separados no n8n:
 }
 ```
 
-**Nó 6 — Google Sheets (Update)**
-- Operação: Update Row
+**Nó 6 — Google Sheets**
+- Ação: **Update row in sheet**
 - Coluna chave: `telefone`
 - Campos atualizados:
   - `status_contato` = `aguardando_resposta_optin`
@@ -141,10 +142,11 @@ O MVP usa 3 fluxos (workflows) separados no n8n:
 }
 ```
 
-**Nó 4 — Google Sheets (Update)**
+**Nó 4 — Google Sheets**
+- Ação: **Update row in sheet**
 - Coluna chave: `telefone`
 - Campos atualizados:
-        - `ultima_campanha` = `catalogo_pdf_inicial`
+  - `ultima_campanha` = `catalogo_pdf_inicial`
   - `data_ultimo_envio` = `{{$now.toISO()}}`
   - `status_contato` = `campanha_enviada`
   - `resposta_ultima_campanha` = vazio
@@ -161,20 +163,24 @@ O MVP usa 3 fluxos (workflows) separados no n8n:
 ```
 [1. Webhook - Receber mensagem do WhatsApp]
         |
-[2. Set - Extrair telefone, texto, timestamp]
+[2. Edit Fields (Set) - Extrair telefone, texto, timestamp]
         |
 [3. Google Sheets - Buscar contato pelo telefone]
         |
-[4. Switch - Verificar status_contato atual]
+[4. Switch - status_contato]
         |
-    ┌───────────────────────────────┐
-    |                               |
-[5a. É resposta de opt-in]    [5b. É resposta de campanha]
-    |                               |
-[6a. IF - Classificar opt-in]  [6b. IF - Classificar interesse]
-    |                               |
-[7a. Google Sheets - Atualizar [7b. Google Sheets - Atualizar
-     opt-in e status]               interesse e status]
+    ┌──────────────┼──────────────┐
+    |              |              |
+  opt-in       campanha       fallback
+    |              |              |
+[5a. IF opt-out?] [5c. IF opt-out?] [4x. Sheets
+    |              |              resposta genérica]
+    ├─true→6a-out  ├─true→opt_out
+    └─false→       └─false→
+[5b. IF positivo?] [5d. IF interesse?]
+    |              |
+    ├─true→6a-sim  ├─true→6b-interesse
+    └─false→6a-nao └─false→6b-sem
 ```
 
 ### Detalhamento
@@ -185,80 +191,115 @@ O MVP usa 3 fluxos (workflows) separados no n8n:
 - URL: gerada pelo n8n (ex: `https://seu-n8n.com/webhook/whatsapp-respostas`)
 - Esta URL é configurada no Meta Business como Webhook de callback
 
-**Nó 2 — Set**
-- Extrai do payload:
-  - `telefone` = número de quem enviou
-  - `texto` = corpo da mensagem
-  - `timestamp` = hora da mensagem
-- O payload do WhatsApp Cloud API vem em:
-  - `body.entry[0].changes[0].value.messages[0].from`
-  - `body.entry[0].changes[0].value.messages[0].text.body`
-  - `body.entry[0].changes[0].value.messages[0].timestamp`
+**Nó 2 — Edit Fields (Set)**
+- No n8n, procure por `set` na barra de busca e selecione **Edit Fields (Set)**
+- Esse nó extrai os dados da mensagem recebida pelo webhook
 
-**Nó 3 — Google Sheets (Lookup)**
-- Operação: Read Rows
+**Opção A — Usando JSON (recomendado)**
+1. Em **Mode**, selecione **JSON**
+2. Cole este JSON no campo:
+```json
+{
+  "telefone": "{{ $json.entry[0].changes[0].value.messages[0].from }}",
+  "texto": "{{ $json.entry[0].changes[0].value.messages[0].text.body }}",
+  "texto_lower": "{{ $json.entry[0].changes[0].value.messages[0].text.body.toLowerCase() }}",
+  "timestamp": "{{ $json.entry[0].changes[0].value.messages[0].timestamp }}"
+}
+```
+
+**Opção B — Usando Manual Mapping**
+1. Em **Mode**, selecione **Manual Mapping**
+2. Clique em **Add Field** 3 vezes e preencha:
+
+| Nome do campo | Valor (expressão) |
+|---------------|-------------------|
+| `telefone` | `{{ $json.entry[0].changes[0].value.messages[0].from }}` |
+| `texto` | `{{ $json.entry[0].changes[0].value.messages[0].text.body }}` |
+| `texto_lower` | `{{ $json.entry[0].changes[0].value.messages[0].text.body.toLowerCase() }}` |
+| `timestamp` | `{{ $json.entry[0].changes[0].value.messages[0].timestamp }}` |
+
+3. Para inserir expressões, clique no ícone de engrenagem ao lado do campo de valor e ative o modo **Expression**
+
+**Importante:** desative a opção **Include Other Input Fields** para que o nó passe adiante apenas os 4 campos extraídos
+
+**Nó 3 — Google Sheets**
+- Ação: **Get row(s) in sheet**
 - Filtro: `telefone` = telefone recebido
 - Retorna os dados atuais da cliente
 
 **Nó 4 — Switch**
-- Campo: `status_contato`
-- Caso 1: `aguardando_resposta_optin` → vai para 5a
-- Caso 2: `campanha_enviada` → vai para 5b
-- Caso padrão: registra resposta genérica
+- Mode: **Rules**
+- **Routing Rule 1:** `{{ $json.status_contato }}` `is equal to` `aguardando_resposta_optin` → Rename Output: `opt-in`
+- **Routing Rule 2:** `{{ $json.status_contato }}` `is equal to` `campanha_enviada` → Rename Output: `campanha`
+- **Fallback (saída automática):** é a 3ª saída do próprio Switch. Conecte essa saída a um nó Google Sheets de atualização para registrar resposta genérica (`resposta_ultima_campanha` e `data_ultima_resposta`) sem alterar `status_contato`
 
-**Nó 5a — É resposta de opt-in**
-- Segue para classificação do consentimento
+**Nó 5a — IF (É opt-out?)**
+- `value1`: `{{ $json.texto_lower }}`
+- Operador: `contains`
+- `value2`: `parar, sair, cancelar, nao quero mais, não quero mais`
+- Se `true` → Nó 6a-out
+- Se `false` → Nó 5b
 
-**Nó 6a — IF (Classificar opt-in)**
-- Condição: texto contém alguma palavra positiva
-- Palavras positivas: `sim`, `quero`, `pode`, `aceito`, `manda`, `ok`, `claro`
-- Palavras negativas: `nao`, `não`, `parar`, `sair`, `não quero`
+**Nó 5b — IF (É positivo?)**
+- `value1`: `{{ $json.texto_lower }}`
+- Operador: `contains`
+- `value2`: `sim, quero, pode, aceito, ok, claro`
+- Se `true` → Nó 6a-sim
+- Se `false` → Nó 6a-nao
 
-Se positiva:
+**Nó 6a-sim — Google Sheets**
+- Ação: **Update row in sheet**
+- Coluna chave: `telefone`
 - `opt_in` = `sim`
-- `data_opt_in` = timestamp
+- `data_opt_in` = `={{ $now.toISO() }}`
 - `status_contato` = `ativo`
+- `data_ultima_resposta` = `={{ $now.toISO() }}`
 
 Depois dessa atualização, o sistema chama o Fluxo B para enviar a mensagem pós-consentimento e o PDF.
 
-Se negativa:
+**Nó 6a-nao — Google Sheets**
+- Ação: **Update row in sheet**
+- Coluna chave: `telefone`
 - `opt_in` = `nao`
 - `opt_out` = `sim`
 - `status_contato` = `opt_out`
+- `data_ultima_resposta` = `={{ $now.toISO() }}`
 
-**Nó 7a — Google Sheets (Update)**
+**Nó 6a-out — Google Sheets**
+- Ação: **Update row in sheet**
+- Mesmo que Nó 6a-nao
+
+**Ramo Campanha:**
+
+**Nó 5c — IF (É opt-out?)**
+- `value1`: `{{ $json.texto_lower }}`
+- Operador: `contains`
+- `value2`: `parar, sair, cancelar, nao quero mais, não quero mais`
+- Se `true` → atualizar para opt_out (mesma lógica do Nó 6a-out)
+- Se `false` → Nó 5d
+
+**Nó 5d — IF (É interesse?)**
+- `value1`: `{{ $json.texto_lower }}`
+- Operador: `contains`
+- `value2`: `quero, interesse, me chama, sim, quanto custa, preço`
+- Se `true` → Nó 6b-interesse
+- Se `false` → Nó 6b-sem
+
+**Nó 6b-interesse — Google Sheets**
+- Ação: **Update row in sheet**
 - Coluna chave: `telefone`
-- Atualiza os campos conforme a classificação
-
-**Nó 5b — É resposta de campanha**
-- Segue para classificação de interesse
-
-**Nó 6b — IF (Classificar interesse)**
-- Palavras de interesse: `quero`, `tenho interesse`, `me chama`, `sim`, `quanto custa`, `preço`, `quero saber`, `manda`, `pode`
-- Palavras de desinteresse: `não`, `nao`, `agora não`, `depois`, `sem interesse`
-- Palavras de opt-out: `parar`, `sair`, `não quero mais`, `cancelar`
-
-Se interesse:
 - `interessado` = `sim`
 - `status_contato` = `interessada`
-- `resposta_ultima_campanha` = texto da resposta
-- `data_ultima_resposta` = timestamp
+- `resposta_ultima_campanha` = `={{ $json.texto }}`
+- `data_ultima_resposta` = `={{ $now.toISO() }}`
 
-Se desinteresse:
+**Nó 6b-sem — Google Sheets**
+- Ação: **Update row in sheet**
+- Coluna chave: `telefone`
 - `interessado` = `nao`
 - `status_contato` = `sem_interesse`
-- `resposta_ultima_campanha` = texto da resposta
-- `data_ultima_resposta` = timestamp
-
-Se opt-out:
-- `opt_out` = `sim`
-- `status_contato` = `opt_out`
-- `resposta_ultima_campanha` = texto da resposta
-- `data_ultima_resposta` = timestamp
-
-**Nó 7b — Google Sheets (Update)**
-- Coluna chave: `telefone`
-- Atualiza os campos conforme a classificação
+- `resposta_ultima_campanha` = `={{ $json.texto }}`
+- `data_ultima_resposta` = `={{ $now.toISO() }}`
 
 ---
 

@@ -12,7 +12,7 @@ Pode ser usada no Google Sheets, conectada ao n8n.
 | # | Campo | Quem preenche | Tipo | Valores aceitos | Exemplo |
 |---|-------|--------------|------|----------------|---------|
 | 1 | `nome` | Você | texto | nome da cliente | Maria Silva |
-| 2 | `telefone` | Você | texto | formato 55DDDNÚMERO | 5511999990001 |
+| 2 | `telefone` | Você | texto | formato 55DDDNÚMERO (sem `+`, sem espaços, sem traços) | 5511999990001 |
 | 3 | `segmento` | Você | texto | categoria personalizada da mensagem | bolsas |
 | 4 | `opt_in` | Sistema | texto | vazio / sim / nao | sim |
 | 5 | `data_opt_in` | Sistema | data/hora | ISO 8601 | 2026-03-28T15:47:00 |
@@ -24,6 +24,10 @@ Pode ser usada no Google Sheets, conectada ao n8n.
 | 11 | `interessado` | Sistema | texto | vazio / sim / nao | sim |
 | 12 | `opt_out` | Sistema | texto | vazio / sim | sim |
 | 13 | `observacoes` | Você | texto | notas livres | Comprou em dezembro |
+| 14 | `texto_opt_in` | Sistema | texto | resposta crua que confirmou o opt-in (auditoria LGPD) | sim, quero receber |
+| 15 | `versao_template_optin` | Sistema | texto | nome+versão do template usado | solicitar_consentimento_v1 |
+| 16 | `tentativas_envio` | Sistema | inteiro | contador de tentativas com erro | 0 |
+| 17 | `ultimo_erro` | Sistema | texto | código/mensagem do último erro Meta | 131026 - not a WhatsApp user |
 
 ---
 
@@ -78,6 +82,9 @@ Sugestões de uso para `segmento`:
 | `aguardando_atendimento` | Interesse confirmado, você precisa atender |
 | `atendida` | Você já deu continuidade |
 | `opt_out` | Pediu para não receber mais |
+| `numero_invalido` | Meta retornou que o número não é WhatsApp |
+| `falha_envio` | Erro técnico no envio (rate limit, template paused etc.) — para revisão |
+| `revisao_manual` | Resposta não classificável automaticamente |
 
 ### resposta_ultima_campanha
 - Texto exato ou resumo da última resposta da cliente
@@ -104,11 +111,13 @@ Sugestões de uso para `segmento`:
 
 ## Estado inicial de um novo contato
 
-Quando você adiciona uma cliente nova, a linha fica assim:
+Quando você adiciona uma cliente nova, a linha fica assim (todos os campos do sistema vazios, exceto `status_contato`, `tentativas_envio`):
 
-| nome | telefone | segmento | opt_in | data_opt_in | ultima_campanha | data_ultimo_envio | status_contato | resposta_ultima_campanha | data_ultima_resposta | interessado | opt_out | observacoes |
-|------|----------|----------|--------|-------------|-----------------|-------------------|----------------|--------------------------|----------------------|-------------|---------|-------------|
-| Maria Silva | 5511999990001 | bolsas | | | | | sem_consentimento | | | | | Cliente indicada |
+| nome | telefone | segmento | status_contato | tentativas_envio | observacoes |
+|------|----------|----------|----------------|-----------------:|-------------|
+| Maria Silva | 5511999990001 | bolsas | sem_consentimento | 0 | Cliente indicada |
+
+Demais colunas (`opt_in`, `data_opt_in`, `ultima_campanha`, `data_ultimo_envio`, `resposta_ultima_campanha`, `data_ultima_resposta`, `interessado`, `opt_out`, `texto_opt_in`, `versao_template_optin`, `ultimo_erro`) começam vazias e são preenchidas pelo sistema.
 
 ---
 

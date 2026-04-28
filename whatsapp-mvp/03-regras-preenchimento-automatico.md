@@ -110,26 +110,41 @@ Todos os outros são atualizados exclusivamente pelo sistema, com base em evento
 
 ## Palavras-chave para Classificação
 
+> **Regra crítica:** a comparação é por **palavra inteira** (regex `\bpalavra\b`), nunca por `contains` simples.
+> Motivo: `contains` para `"sim"` daria match em `"assim não"`, e `contains` para `"parar"` daria match em `"vou comparar"`. Isso causaria opt-out indevido e perda de cliente.
+
+### Prioridade absoluta — botões do template
+Quando a resposta vem de um botão do template (campos `button.payload` ou `interactive.button_reply.id`), use **exclusivamente** o payload do botão. É determinístico e não precisa de classificação por texto.
+
+- payload `SIM` ou `OPTIN_SIM` → opt-in confirmado
+- payload `NÃO` ou `OPTIN_NAO` → opt-out
+
 ### Resposta positiva (opt-in ou interesse)
+Match por palavra inteira em `texto_lower.trim()`:
 ```
-sim, quero, pode, aceito, manda, ok, claro, tenho interesse,
-me chama, quanto custa, preço, quero saber, confirmo
-```
-
-### Resposta negativa (sem interesse)
-```
-não, nao, agora não, agora nao, depois, sem interesse,
-não preciso, nao preciso, tô bem, to bem
+sim, s, quero, aceito, ok, claro, confirmo, pode mandar,
+tenho interesse, me chama, quanto custa, preço, quero saber
 ```
 
-### Resposta de opt-out (parar de receber)
+### Resposta negativa (sem interesse, mas NÃO opt-out)
 ```
-parar, sair, cancelar, não quero mais, nao quero mais,
-pare, remove, remover, tirar, não manda mais, nao manda mais
+não, nao, n, agora não, agora nao, depois, sem interesse,
+não preciso, nao preciso
 ```
 
-### Regra de prioridade
-Se a resposta contém palavra de opt-out, o opt-out tem prioridade sobre qualquer outra classificação.
+### Resposta de opt-out (parar de receber definitivamente)
+```
+parar, sair, cancelar, pare, remove, remover, tirar,
+não quero mais, nao quero mais, não manda mais, nao manda mais,
+descadastrar, descadastra, stop, sair da lista
+```
+
+### Regra de prioridade (avaliar nesta ordem)
+1. **Botão do template** → resolve direto, sem checar texto
+2. **Opt-out** → se houver qualquer palavra de opt-out, é opt-out
+3. **Negativo** → marca `sem_interesse` (mantém opt-in)
+4. **Positivo** → marca `interessada` ou `ativo`
+5. **Não classificável** → fallback: salvar resposta crua, manter status, marcar para revisão manual
 
 ---
 
