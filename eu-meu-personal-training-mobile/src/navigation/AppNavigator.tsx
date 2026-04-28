@@ -12,36 +12,38 @@ import {
   ExerciseFormScreen,
   WarmupFormScreen,
   StretchFormScreen,
+  WorkoutFormScreen,
 } from '../screens';
-import { COLORS } from '../constants/theme';
+import { useTheme } from '../context/ThemeContext';
+import { useWorkoutContext } from '../context/WorkoutContext';
 
 const Stack = createStackNavigator<RootStackParamList>();
 
 /**
  * AppNavigator component
- * Configures Stack Navigator with all app screens
- * - Home: Main screen with workout categories
- * - Workout: Workout detail screen with exercises, warmups, stretches
- * - ExerciseForm: Create/edit exercise form
- * - WarmupForm: Create/edit warmup form
- * - StretchForm: Create/edit stretch form
- * **Validates: Requirements 8.1, 8.2, 8.3**
+ * Configures Stack Navigator with all app screens.
+ * - Home: Workout list
+ * - Workout: Workout detail
+ * - WorkoutForm: Create / edit workout (custom A/B/C/D... structure)
+ * - ExerciseForm / WarmupForm / StretchForm: item forms
  */
 export function AppNavigator(): React.ReactElement {
+  const { colors } = useTheme();
+  const { workouts } = useWorkoutContext();
   return (
     <Stack.Navigator
       initialRouteName="Home"
       screenOptions={{
         headerStyle: {
-          backgroundColor: COLORS.primary,
+          backgroundColor: colors.primary,
         },
-        headerTintColor: COLORS.white,
+        headerTintColor: colors.textOnPrimary,
         headerTitleStyle: {
           fontWeight: 'bold',
           fontSize: 18,
         },
         cardStyle: {
-          backgroundColor: COLORS.background,
+          backgroundColor: colors.background,
         },
       }}
     >
@@ -57,7 +59,14 @@ export function AppNavigator(): React.ReactElement {
         name="Workout"
         component={WorkoutScreen}
         options={({ route }) => ({
-          title: `Treino ${route.params.workoutId}`,
+          title: workouts[route.params.workoutId]?.name ?? 'Treino',
+        })}
+      />
+      <Stack.Screen
+        name="WorkoutForm"
+        component={WorkoutFormScreen}
+        options={({ route }) => ({
+          title: route.params?.workoutId ? 'Editar Treino' : 'Novo Treino',
         })}
       />
       <Stack.Screen

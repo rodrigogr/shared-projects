@@ -1,54 +1,178 @@
 /**
  * Theme constants for Eu Meu Personal Training
- * Centralized color scheme and styling constants
- * **Validates: Requirements 8.1, 8.2, 8.3**
+ *
+ * Provides light and dark color palettes plus shared design tokens. New code
+ * should consume the active palette via `useTheme()` from
+ * `src/context/ThemeContext`. The legacy `COLORS` export is kept as the LIGHT
+ * palette so screens not yet migrated keep rendering correctly.
  */
 
-/**
- * Color palette from design document
- */
-export const COLORS = {
-  // Primary colors
-  primary: '#4F46E5',      // Indigo - main brand color
-  secondary: '#10B981',    // Emerald - success/positive actions
-  
-  // Background colors
-  background: '#F9FAFB',   // Light Gray - main background
-  white: '#FFFFFF',
-  
-  // Text colors
-  text: '#1F2937',         // Dark Gray - primary text
-  textSecondary: '#6B7280', // Medium Gray - secondary text
-  textMuted: '#9CA3AF',    // Light Gray - muted/placeholder text
-  
-  // Accent colors
-  accent: '#F59E0B',       // Amber - highlights and warmup
-  
-  // Semantic colors
-  danger: '#EF4444',       // Red - destructive actions
-  success: '#10B981',      // Green - success states
-  warning: '#F59E0B',      // Amber - warning states
-  info: '#3B82F6',         // Blue - info states
-  
-  // Workout category colors
-  cardA: '#4F46E5',        // Indigo
-  cardB: '#10B981',        // Emerald
-  cardC: '#F59E0B',        // Amber
-  cardD: '#EF4444',        // Red
-  
+export interface ThemePalette {
+  // Brand
+  primary: string;
+  primaryDark: string;
+  secondary: string;
+
+  // Surfaces
+  background: string;
+  surface: string;
+  surfaceAlt: string;
+  white: string;
+
+  // Text
+  text: string;
+  textSecondary: string;
+  textMuted: string;
+  textOnPrimary: string;
+  placeholder: string;
+
+  // Accent
+  accent: string;
+
+  // Semantic
+  danger: string;
+  success: string;
+  warning: string;
+  info: string;
+
+  // Palette used to color workout cards (supports many custom workouts)
+  cardPalette: string[];
+
+  // Legacy aliases (kept so existing screens don't break)
+  cardA: string;
+  cardB: string;
+  cardC: string;
+  cardD: string;
+
   // Section colors
-  warmup: '#F59E0B',       // Amber
-  stretch: '#8B5CF6',      // Purple
-  exercise: '#4F46E5',     // Indigo
-  
-  // Border and divider colors
+  warmup: string;
+  stretch: string;
+  exercise: string;
+
+  // Borders / dividers
+  border: string;
+  divider: string;
+
+  // Overlays
+  overlay: string;
+  cardOverlay: string;
+
+  // Status bar style hint
+  statusBarStyle: 'light' | 'dark';
+}
+
+const sharedCardPalette = [
+  '#4F46E5', // Indigo
+  '#10B981', // Emerald
+  '#F59E0B', // Amber
+  '#EF4444', // Red
+  '#8B5CF6', // Purple
+  '#06B6D4', // Cyan
+  '#EC4899', // Pink
+  '#14B8A6', // Teal
+];
+
+export const lightColors: ThemePalette = {
+  primary: '#4F46E5',
+  primaryDark: '#3730A3',
+  secondary: '#10B981',
+
+  background: '#F9FAFB',
+  surface: '#FFFFFF',
+  surfaceAlt: '#F3F4F6',
+  white: '#FFFFFF',
+
+  text: '#1F2937',
+  textSecondary: '#6B7280',
+  textMuted: '#9CA3AF',
+  textOnPrimary: '#FFFFFF',
+  placeholder: '#9CA3AF',
+
+  accent: '#F59E0B',
+
+  danger: '#EF4444',
+  success: '#10B981',
+  warning: '#F59E0B',
+  info: '#3B82F6',
+
+  cardPalette: sharedCardPalette,
+  cardA: sharedCardPalette[0],
+  cardB: sharedCardPalette[1],
+  cardC: sharedCardPalette[2],
+  cardD: sharedCardPalette[3],
+
+  warmup: '#F59E0B',
+  stretch: '#8B5CF6',
+  exercise: '#4F46E5',
+
   border: '#E5E7EB',
   divider: '#D1D5DB',
-  
-  // Overlay colors
+
   overlay: 'rgba(0, 0, 0, 0.5)',
   cardOverlay: 'rgba(255, 255, 255, 0.2)',
-} as const;
+
+  statusBarStyle: 'light',
+};
+
+export const darkColors: ThemePalette = {
+  primary: '#6366F1',
+  primaryDark: '#4338CA',
+  secondary: '#34D399',
+
+  background: '#0F172A',
+  surface: '#1E293B',
+  surfaceAlt: '#334155',
+  white: '#FFFFFF',
+
+  text: '#F1F5F9',
+  textSecondary: '#CBD5E1',
+  textMuted: '#94A3B8',
+  textOnPrimary: '#FFFFFF',
+  placeholder: '#64748B',
+
+  accent: '#FBBF24',
+
+  danger: '#F87171',
+  success: '#34D399',
+  warning: '#FBBF24',
+  info: '#60A5FA',
+
+  cardPalette: sharedCardPalette,
+  cardA: sharedCardPalette[0],
+  cardB: sharedCardPalette[1],
+  cardC: sharedCardPalette[2],
+  cardD: sharedCardPalette[3],
+
+  warmup: '#FBBF24',
+  stretch: '#A78BFA',
+  exercise: '#818CF8',
+
+  border: '#334155',
+  divider: '#475569',
+
+  overlay: 'rgba(0, 0, 0, 0.7)',
+  cardOverlay: 'rgba(255, 255, 255, 0.08)',
+
+  statusBarStyle: 'light',
+};
+
+/**
+ * Backward-compatible export. Kept as the LIGHT palette so components that
+ * still import `COLORS` directly continue to work.
+ */
+export const COLORS: ThemePalette = lightColors;
+
+/**
+ * Picks a deterministic palette color from a string seed (e.g. workout id).
+ */
+export function pickPaletteColor(seed: string, palette: string[] = sharedCardPalette): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) {
+    hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  }
+  const index = Math.abs(hash) % palette.length;
+  return palette[index];
+}
 
 /**
  * Spacing constants for consistent layout

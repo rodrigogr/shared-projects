@@ -11,6 +11,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet, Platform } from 'react-native';
 import { WorkoutProvider } from './src/context/WorkoutContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AppNavigator } from './src/navigation/AppNavigator';
 
 /**
@@ -47,14 +48,45 @@ export default function App(): React.ReactElement {
   return (
     <GestureHandlerRootView style={styles.container}>
       <SafeAreaProvider>
-        <NavigationContainer>
+        <ThemeProvider>
           <WorkoutProvider>
-            <StatusBar style="light" />
-            <AppNavigator />
+            <ThemedAppShell />
           </WorkoutProvider>
-        </NavigationContainer>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
+  );
+}
+
+/**
+ * Inner shell that has access to the active theme so it can drive the status
+ * bar and navigation container background.
+ */
+function ThemedAppShell(): React.ReactElement {
+  const { effectiveMode, colors } = useTheme();
+  return (
+    <NavigationContainer
+      theme={{
+        dark: effectiveMode === 'dark',
+        colors: {
+          primary: colors.primary,
+          background: colors.background,
+          card: colors.surface,
+          text: colors.text,
+          border: colors.border,
+          notification: colors.accent,
+        },
+        fonts: {
+          regular: { fontFamily: 'System', fontWeight: '400' },
+          medium: { fontFamily: 'System', fontWeight: '500' },
+          bold: { fontFamily: 'System', fontWeight: '700' },
+          heavy: { fontFamily: 'System', fontWeight: '900' },
+        },
+      }}
+    >
+      <StatusBar style={effectiveMode === 'dark' ? 'light' : 'dark'} />
+      <AppNavigator />
+    </NavigationContainer>
   );
 }
 

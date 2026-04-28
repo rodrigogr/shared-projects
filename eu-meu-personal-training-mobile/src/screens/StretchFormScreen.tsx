@@ -1,13 +1,12 @@
 /**
- * StretchFormScreen - Form for creating and editing stretch activities
- * **Validates: Requirements 5.2, 5.3, 8.1, 8.2, 8.3**
+ * StretchFormScreen - Form for creating and editing stretch activities. Uses
+ * the active theme palette and the stretch accent for the primary action.
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
   ScrollView,
@@ -15,9 +14,10 @@ import {
   Platform,
 } from 'react-native';
 import { useWorkoutContext } from '../context/WorkoutContext';
-import { WorkoutCategory, StretchActivity } from '../types';
+import { useTheme } from '../context/ThemeContext';
+import { StretchActivity, WorkoutCategory } from '../types';
 import { validateExerciseName, validateDuration } from '../utils/validators';
-import { COLORS as THEME_COLORS, SPACING, BORDER_RADIUS, FONT_SIZES, TOUCH_TARGETS } from '../constants/theme';
+import { createFormStyles } from './formStyles';
 
 interface StretchFormScreenProps {
   route: {
@@ -31,32 +31,22 @@ interface StretchFormScreenProps {
   };
 }
 
-// Stretch-specific colors (using stretch accent color)
-const COLORS = {
-  ...THEME_COLORS,
-  primary: THEME_COLORS.stretch, // Use stretch color as primary for this screen
-};
-
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).substr(2);
 }
 
-/**
- * StretchFormScreen component
- * Form for stretch name, duration, target muscles, link
- * Supports create and edit modes
- */
 export function StretchFormScreen({ route, navigation }: StretchFormScreenProps): React.ReactElement {
   const { workoutId, stretchId } = route.params;
   const { workouts, addStretch, updateStretch } = useWorkoutContext();
+  const { colors } = useTheme();
+  const styles = useMemo(() => createFormStyles(colors, colors.stretch), [colors]);
+
   const workout = workouts[workoutId];
-  const existingStretch = stretchId 
-    ? workout.stretches.find(s => s.id === stretchId) 
+  const existingStretch = stretchId
+    ? workout.stretches.find((s) => s.id === stretchId)
     : undefined;
   const isEditing = !!existingStretch;
 
-
-  // Form state
   const [name, setName] = useState(existingStretch?.name || '');
   const [durationSeconds, setDurationSeconds] = useState(
     existingStretch?.durationSeconds?.toString() || '30'
@@ -64,26 +54,22 @@ export function StretchFormScreen({ route, navigation }: StretchFormScreenProps)
   const [targetMuscles, setTargetMuscles] = useState(existingStretch?.targetMuscles || '');
   const [executionLink, setExecutionLink] = useState(existingStretch?.executionLink || '');
 
-  // Error state
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
-    // Validate name
     const nameValidation = validateExerciseName(name);
     if (!nameValidation.isValid) {
       newErrors.name = nameValidation.error || 'Nome inválido';
     }
 
-    // Validate duration
     const durationValue = parseInt(durationSeconds, 10);
     const durationValidation = validateDuration(isNaN(durationValue) ? -1 : durationValue);
     if (!durationValidation.isValid) {
       newErrors.durationSeconds = durationValidation.error || 'Duração inválida';
     }
 
-    // Validate target muscles (required)
     if (!targetMuscles.trim()) {
       newErrors.targetMuscles = 'Músculos alvo é obrigatório';
     }
@@ -93,9 +79,7 @@ export function StretchFormScreen({ route, navigation }: StretchFormScreenProps)
   };
 
   const handleSave = () => {
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     const stretchData: StretchActivity = {
       id: existingStretch?.id || generateId(),
@@ -132,7 +116,7 @@ export function StretchFormScreen({ route, navigation }: StretchFormScreenProps)
         value={value}
         onChangeText={onChangeText}
         placeholder={options.placeholder}
-        placeholderTextColor={COLORS.placeholder}
+        placeholderTextColor={colors.placeholder}
         keyboardType={options.keyboardType || 'default'}
       />
       {options.error && <Text style={styles.errorText}>{options.error}</Text>}
@@ -171,10 +155,7 @@ export function StretchFormScreen({ route, navigation }: StretchFormScreenProps)
         })}
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => navigation.goBack()}
-          >
+          <TouchableOpacity style={styles.cancelButton} onPress={() => navigation.goBack()}>
             <Text style={styles.cancelButtonText}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity
@@ -191,87 +172,5 @@ export function StretchFormScreen({ route, navigation }: StretchFormScreenProps)
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  scrollContent: {
-    padding: SPACING.lg,
-  },
-  title: {
-    fontSize: FONT_SIZES.xxxl,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: SPACING.xxl,
-  },
-  inputContainer: {
-    marginBottom: SPACING.lg,
-  },
-  label: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: SPACING.xs + 2,
-  },
-  input: {
-    backgroundColor: COLORS.white,
-    borderWidth: 1,
-    borderColor: COLORS.divider,
-    borderRadius: BORDER_RADIUS.md,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm + 2,
-    fontSize: FONT_SIZES.lg,
-    color: COLORS.text,
-    minHeight: TOUCH_TARGETS.minimum,
-  },
-  inputError: {
-    borderColor: COLORS.danger,
-  },
-  errorText: {
-    color: COLORS.danger,
-    fontSize: FONT_SIZES.sm,
-    marginTop: SPACING.xs,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    gap: SPACING.md,
-    marginTop: SPACING.xxl,
-    marginBottom: SPACING.xxxl,
-  },
-  cancelButton: {
-    flex: 1,
-    paddingVertical: SPACING.md + 2,
-    borderRadius: BORDER_RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.divider,
-    alignItems: 'center',
-    minHeight: TOUCH_TARGETS.minimum,
-    justifyContent: 'center',
-  },
-  cancelButtonText: {
-    color: COLORS.text,
-    fontSize: FONT_SIZES.lg,
-    fontWeight: '600',
-  },
-  saveButton: {
-    flex: 2,
-    paddingVertical: SPACING.md + 2,
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    minHeight: TOUCH_TARGETS.minimum,
-    justifyContent: 'center',
-  },
-  saveButtonText: {
-    color: COLORS.white,
-    fontSize: FONT_SIZES.lg,
-    fontWeight: '600',
-  },
-});
 
 export default StretchFormScreen;
