@@ -67,6 +67,16 @@ export function WorkoutScreen({ route, navigation }: WorkoutScreenProps): React.
       headerRight: () => (
         <View style={styles.headerActions}>
           <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('WorkoutExecution', { workoutId })
+            }
+            style={styles.headerButton}
+            accessibilityLabel="Iniciar treino"
+            testID="start-workout-header"
+          >
+            <Text style={styles.headerButtonText}>▶️</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={() => navigation.navigate('WorkoutForm', { workoutId })}
             style={styles.headerButton}
             accessibilityLabel="Editar treino"
@@ -307,6 +317,13 @@ export function WorkoutScreen({ route, navigation }: WorkoutScreenProps): React.
         {!!workout.description && (
           <Text style={styles.workoutDescription}>{workout.description}</Text>
         )}
+        <TouchableOpacity
+          style={[styles.startButton, { backgroundColor: colors.primary }]}
+          onPress={() => navigation.navigate('WorkoutExecution', { workoutId })}
+          testID="start-workout-button"
+        >
+          <Text style={styles.startButtonText}>▶ Iniciar treino</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
@@ -476,6 +493,21 @@ function createStyles(colors: ThemePalette) {
       fontSize: FONT_SIZES.lg,
       color: colors.textSecondary,
       marginTop: SPACING.xs,
+    },
+    startButton: {
+      marginTop: SPACING.lg,
+      paddingVertical: SPACING.md + 2,
+      paddingHorizontal: SPACING.lg,
+      borderRadius: BORDER_RADIUS.lg,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: TOUCH_TARGETS.minimum,
+      ...SHADOWS.md,
+    },
+    startButtonText: {
+      color: colors.textOnPrimary,
+      fontSize: FONT_SIZES.lg,
+      fontWeight: 'bold',
     },
     section: {
       marginBottom: SPACING.xxl,

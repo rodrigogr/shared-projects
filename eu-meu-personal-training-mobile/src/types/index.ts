@@ -29,6 +29,9 @@ export type RootStackParamList = {
   WorkoutForm: {
     workoutId?: string;
   };
+  WorkoutExecution: {
+    workoutId: string;
+  };
 };
 
 /**
@@ -40,6 +43,7 @@ export type ExerciseFormScreenNavigationProp = StackNavigationProp<RootStackPara
 export type WarmupFormScreenNavigationProp = StackNavigationProp<RootStackParamList, 'WarmupForm'>;
 export type StretchFormScreenNavigationProp = StackNavigationProp<RootStackParamList, 'StretchForm'>;
 export type WorkoutFormScreenNavigationProp = StackNavigationProp<RootStackParamList, 'WorkoutForm'>;
+export type WorkoutExecutionScreenNavigationProp = StackNavigationProp<RootStackParamList, 'WorkoutExecution'>;
 
 /**
  * Route prop types for each screen
@@ -50,6 +54,7 @@ export type ExerciseFormScreenRouteProp = RouteProp<RootStackParamList, 'Exercis
 export type WarmupFormScreenRouteProp = RouteProp<RootStackParamList, 'WarmupForm'>;
 export type StretchFormScreenRouteProp = RouteProp<RootStackParamList, 'StretchForm'>;
 export type WorkoutFormScreenRouteProp = RouteProp<RootStackParamList, 'WorkoutForm'>;
+export type WorkoutExecutionScreenRouteProp = RouteProp<RootStackParamList, 'WorkoutExecution'>;
 
 export interface Exercise {
   id: string;

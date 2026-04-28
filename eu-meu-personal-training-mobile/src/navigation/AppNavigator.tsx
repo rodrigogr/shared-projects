@@ -13,6 +13,7 @@ import {
   WarmupFormScreen,
   StretchFormScreen,
   WorkoutFormScreen,
+  WorkoutExecutionScreen,
 } from '../screens';
 import { useTheme } from '../context/ThemeContext';
 import { useWorkoutContext } from '../context/WorkoutContext';
@@ -88,6 +89,14 @@ export function AppNavigator(): React.ReactElement {
         component={StretchFormScreen}
         options={({ route }) => ({
           title: route.params.stretchId ? 'Editar Alongamento' : 'Novo Alongamento',
+        })}
+      />
+      <Stack.Screen
+        name="WorkoutExecution"
+        component={WorkoutExecutionScreen}
+        options={({ route }) => ({
+          title: workouts[route.params.workoutId]?.name ?? 'Treino',
+          gestureEnabled: false,
         })}
       />
     </Stack.Navigator>
